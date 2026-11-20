@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { mediaUrl, type User } from '../lib/api'
 import { Avatar } from './Avatar'
+import { MediaSettingsModal } from './MediaSettingsModal'
 import { useCallContext } from '../hooks/useCall'
 import { HeadphonesIcon, HeadphonesOffIcon, LogOutIcon, MicIcon, MicOffIcon, PhoneIcon, SettingsIcon } from './Icons'
 
@@ -9,6 +10,7 @@ export function UserPanel({ user, onSignOut }: { user: User; onSignOut(): void }
   const call = useCallContext()
   const micOff = call.prefs.muted || call.prefs.deafened
   const [menuOpen, setMenuOpen] = useState(false)
+  const [mediaOpen, setMediaOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
 
   // Fecha o menu ao clicar fora ou apertar Esc.
@@ -54,12 +56,16 @@ export function UserPanel({ user, onSignOut }: { user: User; onSignOut(): void }
 
       {menuOpen && (
         <div className="user-menu" role="menu">
-          <button role="menuitem" className="user-menu-item user-menu-item--danger" onClick={onSignOut} autoFocus>
+          <button role="menuitem" className="user-menu-item" autoFocus onClick={() => { setMenuOpen(false); setMediaOpen(true) }}>
+            <MicIcon /> Voz e vídeo
+          </button>
+          <button role="menuitem" className="user-menu-item user-menu-item--danger" onClick={onSignOut}>
             <LogOutIcon /> Sair da conta
           </button>
         </div>
       )}
     </div>
+      {mediaOpen && <MediaSettingsModal settings={call.mediaSettings} onChange={call.setMediaSettings} onClose={() => setMediaOpen(false)} />}
     </>
   )
 }

@@ -1,0 +1,9 @@
+.media-field { display: block; margin-bottom: 14px; }
+.media-select { color: var(--text); }
+
+.media-check, .media-radio { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; cursor: pointer; }
+.media-check input, .media-radio input { margin-top: 3px; accent-color: var(--orange); }
+.media-check small, .media-radio small { display: block; margin-top: 2px; font-size: 13px; color: var(--text-faint); }
+
+.media-quality { margin-top: 8px; }
+.media-note { margin: 8px 0 0; font-size: 13px; color: var(--text-faint); }

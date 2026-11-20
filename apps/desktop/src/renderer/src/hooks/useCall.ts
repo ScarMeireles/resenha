@@ -4,6 +4,7 @@ import {
   callReducer, callsApi, initialCallState, isCurrentRoom, NOTICE_MS, startRingTimeout, type CallState,
 } from '../lib/calls'
 import { groupsApi, type VoiceCredentialsDto } from '../lib/groups'
+import { loadMediaSettings, saveMediaSettings, type MediaSettings } from '../lib/mediaSettings'
 import { connectVoice, type MicPrefs, type ParticipantView, type VoiceConnection } from '../lib/voice'
 import type { CallEvents } from './useRealtime'
 
@@ -20,11 +21,13 @@ export function useCall(token: string) {
   const [prefs, setPrefsState] = useState<MicPrefs>({ muted: false, deafened: false })
   const [viewing, setViewing] = useState(false)
   const [cameraOn, setCameraOn] = useState(false) // não é preferência: começa desligada em toda chamada
+  const [mediaSettings, setMediaSettingsState] = useState<MediaSettings>(() => loadMediaSettings(window.localStorage))
   const [connectedAt, setConnectedAt] = useState<number | null>(null)
 
   const stateRef = useRef<CallState>(state)
   stateRef.current = state
   const prefsRef = useRef(prefs)
+  const mediaSettingsRef = useRef(mediaSettings)
   const connRef = useRef<VoiceConnection | null>(null)
   const attemptRef = useRef(0) // invalida respostas de tentativas antigas
   const stopRingRef = useRef<(() => void) | null>(null)
@@ -60,7 +63,7 @@ export function useCall(token: string) {
           teardown()
           dispatch({ type: 'failed', message: 'A conexão de voz caiu.' })
         },
-      })
+      }, mediaSettingsRef.current)
       if (attempt !== attemptRef.current) {
         conn.disconnect()
         return
@@ -177,6 +180,15 @@ export function useCall(token: string) {
     })
   }, [])
 
+  const setMediaSettings = useCallback((next: MediaSettings) => {
+    mediaSettingsRef.current = next
+    setMediaSettingsState(next)
+    saveMediaSettings(window.localStorage, next)
+    connRef.current?.applySettings(next).catch(() => {
+      dispatch({ type: 'notice', message: 'Não foi possível trocar o aparelho.' })
+    })
+  }, [])
+
   // Derivado dos participantes: reflete também quando o sistema encerra a captura por conta própria.
   const screenSharing = participants.some((p) => p.isLocal && p.screen != null)
 
@@ -247,7 +259,7 @@ export function useCall(token: string) {
   hangUpRef.current = hangUp
   useEffect(() => () => hangUpRef.current(), [])
 
-  return { state, participants, prefs, viewing, setViewing, connectedAt, events, joinGroup, dial, accept, decline, leave, setMuted, setDeafened, cameraOn, setCamera, screenSharing, startScreenShare, stopScreenShare }
+  return { state, participants, prefs, viewing, setViewing, connectedAt, events, joinGroup, dial, accept, decline, leave, setMuted, setDeafened, cameraOn, setCamera, mediaSettings, setMediaSettings, screenSharing, startScreenShare, stopScreenShare }
 }
 
 export type CallApi = ReturnType<typeof useCall>
