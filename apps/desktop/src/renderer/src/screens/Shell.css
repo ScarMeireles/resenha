@@ -216,3 +216,31 @@
   align-items: center;
   justify-content: center;
 }
+
+/* --- Voz: microfone/som desligados e barra "Em chamada" --- */
+.icon-button--off { color: #ff6b6b; background: #3a1d20; }
+.icon-button--off:hover:not(:disabled) { color: #ff6b6b; background: #4a2326; }
+
+.call-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: #16261f;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+.call-bar-back { margin-left: auto; color: var(--text-faint); font-weight: 500; }
+
+/* --- Voz: sala de voz na barra lateral --- */
+.voice-count { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--green); }
+.voice-list { margin: 0 0 4px; padding: 0 12px 0 40px; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.voice-user { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); }
+.voice-user-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.voice-user .avatar--speaking { box-shadow: 0 0 0 2px var(--bg-sidebar), 0 0 0 4px var(--green); }
+.voice-user-muted { display: inline-flex; color: var(--text-faint); }

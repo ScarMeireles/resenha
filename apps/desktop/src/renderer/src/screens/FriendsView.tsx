@@ -1,8 +1,8 @@
 import { useId, useState, type FormEvent, type Ref } from 'react'
 import { Avatar } from '../components/Avatar'
 import { CheckIcon, ChatIcon, PhoneIcon, XIcon } from '../components/Icons'
-import { ApiError, mediaUrl } from '../lib/api'
-import { normalizeUsername, sortFriends, type FriendDto, type FriendRequestDto, type FriendsState } from '../lib/friends'
+import { ApiError, mediaUrl, type User } from '../lib/api'
+import { isOnline, normalizeUsername, sortFriends, type FriendDto, type FriendRequestDto, type FriendsState } from '../lib/friends'
 import './FriendsView.css'
 
 type Tab = 'online' | 'all' | 'requests'
@@ -13,9 +13,10 @@ interface Props {
   onSendRequest(username: string): Promise<unknown>
   onAccept(id: string): Promise<void>
   onRemoveRequest(id: string): Promise<void>
+  onCall(user: User): void
 }
 
-export function FriendsView({ state, inputRef, onSendRequest, onAccept, onRemoveRequest }: Props) {
+export function FriendsView({ state, inputRef, onSendRequest, onAccept, onRemoveRequest, onCall }: Props) {
   const [tab, setTab] = useState<Tab>('all')
   const tabs: { id: Tab; label: string }[] = [
     { id: 'online', label: 'Online' },
@@ -40,7 +41,7 @@ export function FriendsView({ state, inputRef, onSendRequest, onAccept, onRemove
         {tab === 'requests' ? (
           <Requests state={state} onAccept={onAccept} onRemoveRequest={onRemoveRequest} />
         ) : (
-          <FriendList friends={state.friends} onlyOnline={tab === 'online'} />
+          <FriendList friends={state.friends} onlyOnline={tab === 'online'} onCall={onCall} />
         )}
       </div>
     </section>
@@ -90,8 +91,8 @@ function AddFriend({ inputRef, onSendRequest }: Pick<Props, 'inputRef' | 'onSend
   )
 }
 
-function FriendList({ friends, onlyOnline }: { friends: FriendDto[]; onlyOnline: boolean }) {
-  const shown = sortFriends(onlyOnline ? friends.filter((f) => f.presence === 'online') : friends)
+function FriendList({ friends, onlyOnline, onCall }: { friends: FriendDto[]; onlyOnline: boolean; onCall(user: User): void }) {
+  const shown = sortFriends(onlyOnline ? friends.filter((f) => isOnline(f.presence)) : friends)
   const empty = onlyOnline ? 'Nenhum amigo online agora.' : 'Você ainda não tem amigos. Mande um pedido pelo @ ali em cima.'
 
   if (shown.length === 0) return <p className="friends-empty">{empty}</p>
@@ -106,12 +107,15 @@ function FriendList({ friends, onlyOnline }: { friends: FriendDto[]; onlyOnline:
               <div>
                 <strong>{user.displayName}</strong> <span className="friends-handle">@{user.username}</span>
               </div>
-              <span className={presence === 'online' ? 'friends-status friends-status--online' : 'friends-status'}>
-                {presence === 'online' ? 'Online' : 'Offline'}
+              <span className={`friends-status friends-status--${presence}`}>
+                {presence === 'online' ? 'Online' : presence === 'in-call' ? 'Em chamada' : 'Offline'}
               </span>
             </div>
             <button className="friends-action" aria-label="Mandar mensagem" title="Em breve" disabled><ChatIcon size={18} /></button>
-            <button className="friends-action" aria-label="Ligar" title="Em breve" disabled><PhoneIcon size={18} /></button>
+            <button className="friends-action" aria-label={`Ligar para ${user.displayName}`} disabled={presence === 'offline'}
+              title={presence === 'offline' ? `${user.displayName} está offline` : 'Ligar'} onClick={() => onCall(user)}>
+              <PhoneIcon size={18} />
+            </button>
           </li>
         ))}
       </ul>

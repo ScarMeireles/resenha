@@ -1,0 +1,52 @@
+.call-cards {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.call-card {
+  position: relative;
+  width: 300px;
+  padding: 20px;
+  border-radius: 16px;
+  background: #111318;
+  border: 1px solid #3a404b;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Anel verde ao redor do avatar de 72px (4px de fundo + 3px verde). */
+.call-card .avatar { margin: 7px 0 10px; box-shadow: 0 0 0 4px #111318, 0 0 0 7px var(--green); }
+.call-card-name { font-size: 17px; font-weight: 700; }
+.call-card-sub { font-size: 13px; color: var(--text-faint); }
+.call-card-actions { display: flex; gap: 12px; width: 100%; margin-top: 14px; }
+
+.call-card-btn {
+  flex: 1;
+  height: 44px;
+  border: 0;
+  border-radius: 22px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.call-card-btn--decline { background: #e5484d; color: #fff; }
+.call-card-btn--accept { background: var(--green); color: #0b2a1d; font-weight: 700; }
+.call-card-btn:hover { filter: brightness(1.08); }
+
+.call-notice {
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #111318;
+  border: 1px solid #3a404b;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}

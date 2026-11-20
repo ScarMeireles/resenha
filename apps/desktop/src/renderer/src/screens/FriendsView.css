@@ -66,6 +66,7 @@
 .friends-handle { font-size: 13px; color: var(--text-faint); }
 .friends-status { font-size: 13px; color: var(--text-faint); }
 .friends-status--online { color: var(--green); }
+.friends-status--in-call { color: #ff9a57; }
 
 .friends-action {
   width: 38px;

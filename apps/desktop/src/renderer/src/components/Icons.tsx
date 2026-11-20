@@ -58,3 +58,15 @@ export const TrashIcon = (p: P) => (
 export const EditIcon = (p: P) => (
   <Icon {...p}><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" /></Icon>
 )
+export const SpeakerIcon = (p: P) => (
+  <Icon {...p}><path d="M11 5L6 9H2v6h4l5 4zM15.5 8.5a5 5 0 010 7M19 5a10 10 0 010 14" /></Icon>
+)
+export const MicOffIcon = (p: P) => (
+  <Icon {...p}><path d="M1 1l22 22M9 9v3a3 3 0 005.1 2.1M15 9.3V5a3 3 0 00-5.9-.7M17 16.9A7 7 0 015 12v-2M19 10v2c0 .8-.1 1.5-.4 2.2M12 19v3" /></Icon>
+)
+export const HeadphonesOffIcon = (p: P) => (
+  <Icon {...p}><path d="M3 18v-6a9 9 0 013.5-7.1M21 18v-6a9 9 0 00-9-9c-.8 0-1.6.1-2.3.3M21 19a2 2 0 01-2 2h-1v-6h3zM3 19a2 2 0 002 2h1v-6H3zM1 1l22 22" /></Icon>
+)
+export const PhoneOffIcon = (p: P) => (
+  <Icon {...p}><path d="M10.7 13.3a16 16 0 002.9 2.2l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.4 19.4 0 01-3.3-2.6M6.1 9.7A19.8 19.8 0 013.1 4.2 2 2 0 015.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L9.1 9.9M1 1l22 22" /></Icon>
+)

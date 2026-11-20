@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { ConfirmModal } from '../components/Modal'
-import { ChevronDownIcon, EditIcon, HashIcon, HeadphonesIcon, LogOutIcon, UserPlusIcon } from '../components/Icons'
+import { Avatar } from '../components/Avatar'
+import { ChevronDownIcon, EditIcon, HashIcon, LogOutIcon, MicOffIcon, SpeakerIcon, UserPlusIcon } from '../components/Icons'
 import { UserPanel } from '../components/UserPanel'
-import type { User } from '../lib/api'
+import { mediaUrl, type User } from '../lib/api'
 import type { FriendDto } from '../lib/friends'
 import { MAX_GROUP_MEMBERS, type GroupDto } from '../lib/groups'
+import type { ParticipantView } from '../lib/voice'
 import { AddPeopleModal, RenameGroupModal } from './GroupModals'
 
 type Dialog = 'rename' | 'leave' | 'add' | null
@@ -13,6 +15,11 @@ interface Props {
   group: GroupDto
   user: User
   friends: FriendDto[]
+  /** Quem está na sala de voz (ids), vindo do servidor. */
+  voiceUserIds: string[]
+  /** Dados ao vivo (falando/mutado) — só existem se eu estou nesta sala. */
+  liveParticipants: ParticipantView[]
+  onJoinVoice(): void
   onRename(name: string): Promise<void>
   onAddMembers(userIds: string[]): Promise<void>
   onLeave(): Promise<void>
@@ -20,7 +27,7 @@ interface Props {
 }
 
 /** Barra lateral de um grupo: nome com menu de configurações, canais e botão de adicionar pessoas. */
-export function GroupSidebar({ group, user, friends, onRename, onAddMembers, onLeave, onSignOut }: Props) {
+export function GroupSidebar({ group, user, friends, voiceUserIds, liveParticipants, onJoinVoice, onRename, onAddMembers, onLeave, onSignOut }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dialog, setDialog] = useState<Dialog>(null)
   const headerRef = useRef<HTMLElement>(null)
@@ -71,7 +78,25 @@ export function GroupSidebar({ group, user, friends, onRename, onAddMembers, onL
 
       <div className="sidebar-body">
         <button className="channel channel--active" aria-current="page"><HashIcon size={18} /> conversa</button>
-        <button className="channel" disabled title="Em breve"><HeadphonesIcon size={18} /> Sala de voz</button>
+        <button className="channel" onClick={onJoinVoice}>
+          <SpeakerIcon size={18} /> Sala de voz
+          {voiceUserIds.length > 0 && <span className="voice-count">{voiceUserIds.length} na sala</span>}
+        </button>
+        {voiceUserIds.length > 0 && (
+          <ul className="voice-list" aria-label="Na sala de voz">
+            {voiceUserIds.map((id) => {
+              const member = group.members.find((m) => m.user.id === id)?.user
+              const live = liveParticipants.find((p) => p.id === id)
+              return (
+                <li key={id} className="voice-user">
+                  <Avatar name={member?.displayName ?? '?'} seed={id} src={mediaUrl(member?.avatarUrl ?? null)} size={24} speaking={live?.isSpeaking} />
+                  <span className="voice-user-name">{member?.displayName ?? 'Alguém'}</span>
+                  {live?.isMuted && <span className="voice-user-muted" role="img" aria-label="Microfone desligado"><MicOffIcon size={14} /></span>}
+                </li>
+              )
+            })}
+          </ul>
+        )}
         <button className="channel channel--action" disabled={full} title={full ? `O grupo já tem ${MAX_GROUP_MEMBERS} pessoas` : undefined}
           onClick={() => open('add')}>
           <UserPlusIcon size={18} /> Adicionar pessoas
