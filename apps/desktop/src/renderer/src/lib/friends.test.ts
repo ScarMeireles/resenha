@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { User } from './api'
 import {
-  checkUsername, emptyFriends, friendsApi, friendsReducer, normalizeUsername, sortFriends,
+  checkUsername, emptyFriends, friendsApi, friendsReducer, isOnline, normalizeUsername, sortFriends,
   type FriendDto, type FriendRequestDto, type FriendsState,
 } from './friends'
 
@@ -131,5 +131,14 @@ describe('chamadas de amigos', () => {
     expect(String(url)).toMatch(/\/auth\/username-available\?u=a%20b$/)
     expect(init.headers.Authorization).toBeUndefined()
     expect(init.signal).toBe(signal)
+  })
+})
+
+describe('presença "em chamada"', () => {
+  it('conta como conectado e vem antes dos offline', () => {
+    const list = sortFriends([friend('a', 'offline'), friend('b', 'in-call'), friend('c', 'online')])
+    expect(list[2].presence).toBe('offline')
+    expect(isOnline('in-call')).toBe(true)
+    expect(isOnline('offline')).toBe(false)
   })
 })

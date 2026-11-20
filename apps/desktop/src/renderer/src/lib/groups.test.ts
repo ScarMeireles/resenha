@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { User } from './api'
 import {
-  dayLabel, formatTime, groupByDay, groupsApi, groupsReducer, initials, messagesReducer, validateAttachments, PAGE_SIZE,
+  dayLabel, formatTime, groupByDay, groupsApi, groupsReducer, initials, messagesReducer, validateAttachments, voiceReducer, PAGE_SIZE,
   type GroupDto, type MessageDto, type MessagesState,
 } from './groups'
 
@@ -211,5 +211,26 @@ describe('chamadas de grupos', () => {
   it('mostra o título do erro da API', async () => {
     stubFetch(json(403, { title: 'Só o dono do grupo pode renomear.' }))
     await expect(groupsApi.renameGroup('tok', 'g1', 'x')).rejects.toMatchObject({ message: 'Só o dono do grupo pode renomear.', status: 403 })
+  })
+})
+
+describe('sala de voz do grupo', () => {
+  it('voiceReducer guarda quem está na sala e remove a chave quando esvazia', () => {
+    let s = voiceReducer({}, { groupId: 'g1', userIds: ['a', 'b'] })
+    s = voiceReducer(s, { groupId: 'g2', userIds: ['c'] })
+    expect(s).toEqual({ g1: ['a', 'b'], g2: ['c'] })
+    expect(voiceReducer(s, { groupId: 'g1', userIds: [] })).toEqual({ g2: ['c'] })
+  })
+
+  it('groupsApi.getVoice e voiceToken usam as rotas do grupo', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify({ userIds: ['a'] }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    expect(await groupsApi.getVoice('tok', 'g1')).toEqual({ userIds: ['a'] })
+    await groupsApi.voiceToken('tok', 'g1')
+    vi.unstubAllGlobals()
+    expect(String(fetchMock.mock.calls[0][0])).toMatch(/\/groups\/g1\/voice$/)
+    expect(fetchMock.mock.calls[0][1].method).toBe('GET')
+    expect(String(fetchMock.mock.calls[1][0])).toMatch(/\/groups\/g1\/voice\/token$/)
+    expect(fetchMock.mock.calls[1][1].method).toBe('POST')
   })
 })

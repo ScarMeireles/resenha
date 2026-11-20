@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { emptyFriends, friendsApi, friendsReducer } from '../lib/friends'
-import { groupsApi, groupsReducer, messagesReducer, type GroupDto, type MessagesState } from '../lib/groups'
-import { createRealtime } from '../lib/realtime'
+import { groupsApi, groupsReducer, messagesReducer, voiceReducer, type GroupDto, type MessagesState, type VoiceState } from '../lib/groups'
+import { createRealtime, type RealtimeHandlers } from '../lib/realtime'
+
+/** Eventos de chamada, tratados por useCall. */
+export type CallEvents = Pick<RealtimeHandlers, 'callIncoming' | 'callAccepted' | 'callDeclined' | 'callCancelled' | 'callEnded'>
 
 const RETRY_MS = 5000
 
@@ -9,7 +12,11 @@ const RETRY_MS = 5000
  * Dados do app todo (amigos, grupos e mensagens) numa conexão SignalR só.
  * Carrega pela API e se mantém atualizado pelos eventos. Liga quando há token e desliga ao sair (desmonta).
  */
-export function useRealtime(token: string) {
+export function useRealtime(token: string, callEvents: CallEvents) {
+  const [voice, dispatchVoice] = useReducer(voiceReducer, {} as VoiceState)
+  // Sempre o handler mais recente, sem religar a conexão a cada render.
+  const callEventsRef = useRef(callEvents)
+  callEventsRef.current = callEvents
   const [friends, dispatchFriends] = useReducer(friendsReducer, emptyFriends)
   const [groups, dispatchGroups] = useReducer(groupsReducer, [] as GroupDto[])
   const [messages, dispatchMessages] = useReducer(messagesReducer, {} as MessagesState)
@@ -56,6 +63,12 @@ export function useRealtime(token: string) {
       },
       messageCreated: (message) => dispatchMessages({ type: 'created', message }),
       messageDeleted: ({ groupId, messageId }) => dispatchMessages({ type: 'deleted', groupId, messageId }),
+      voiceParticipants: ({ groupId, userIds }) => dispatchVoice({ groupId, userIds }),
+      callIncoming: (payload) => callEventsRef.current.callIncoming(payload),
+      callAccepted: (payload) => callEventsRef.current.callAccepted(payload),
+      callDeclined: (payload) => callEventsRef.current.callDeclined(payload),
+      callCancelled: (payload) => callEventsRef.current.callCancelled(payload),
+      callEnded: (payload) => callEventsRef.current.callEnded(payload),
       resync,
     })
 
@@ -172,8 +185,17 @@ export function useRealtime(token: string) {
     [token],
   )
 
+  /** Carrega quem está na sala de voz do grupo (ao abrir o grupo); depois os eventos mantêm atualizado. */
+  const loadVoice = useCallback(
+    async (groupId: string) => {
+      const { userIds } = await groupsApi.getVoice(token, groupId)
+      dispatchVoice({ groupId, userIds })
+    },
+    [token],
+  )
+
   return {
-    friends, groups, groupsLoaded, messages,
+    friends, groups, groupsLoaded, messages, voice, loadVoice,
     sendRequest, accept, removeRequest,
     createGroup, renameGroup, addMembers, removeMember,
     loadMessages, loadOlder, sendMessage, deleteMessage,
