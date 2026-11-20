@@ -98,7 +98,7 @@ resenha/
 - [x] **Passo 8 — Compartilhar tela** com seletor de janela/monitor e áudio do sistema.
 - [x] **Passo 9 — Qualidade:** presets de bitrate, simulcast, supressão de ruído, seleção de microfone/fone.
 - [ ] **Passo 10 — Hospedagem real** na Oracle e teste com um amigo pela internet.
-- [ ] **Passo 11 — Instalador** `.exe` com electron-builder, publicado em Releases do GitHub (build local, sem CI).
+- [ ] **Passo 11 — Instalador** `.exe` com electron-builder, publicado em Releases do GitHub (build local, sem CI). O instalador já sai com `npm run dist`; falta publicar em Releases, o que depende do passo 10 (endereços reais do servidor) e de um push autorizado.
 
 ## Pré-requisitos (já instalados nesta máquina)
 
@@ -185,3 +185,19 @@ O app procura a API em `http://localhost:5280`. Para outro endereço, copie `app
 - **Segurança da janela:** a tela não acessa o Node nem o disco, só o que o preload expõe. No app compilado, uma política de conteúdo (CSP) só deixa carregar código do próprio app e falar com a API.
 - Se o app não abrir dizendo que falta o Electron, rode `node node_modules/electron/install.js` dentro de `apps/desktop`.
 - **Ajudante de áudio:** o `build:audio` precisa do SDK do .NET 10 (o mesmo da API). Ele gera um `.exe` único de ~36 MB, com o runtime junto, então quem instala o app não precisa ter o .NET. Testes: `dotnet test apps/audio-helper/ResenhaAudio.slnx`. Sem o `.exe`, a opção "Todo o áudio, menos" avisa que não deu para capturar e a tela segue sem som.
+
+### Gerando o instalador
+
+```powershell
+cd apps/desktop
+npm run dist      # typecheck + build + ajudante de áudio + instalador (precisa do SDK do .NET 10)
+```
+
+Sai em `apps/desktop/release/Resenha-Setup-<versão>.exe` (~146 MB, quase tudo Electron e o ajudante de áudio; a pasta `release/` fica fora do Git). A configuração está em `apps/desktop/electron-builder.yml`.
+
+- **Instalação:** um clique, só para o usuário atual e sem pedir administrador (como o Discord). O app vai para `%LOCALAPPDATA%\Programs\resenha-desktop`, com atalhos na Área de Trabalho e no Menu Iniciar. Desinstala pelo "Adicionar ou remover programas" e mantém o login lembrado e as preferências (`%APPDATA%\resenha-desktop`, a mesma pasta do modo de desenvolvimento).
+- **Endereços do servidor:** `VITE_API_URL` e `VITE_LIVEKIT_URL` ficam gravados no app na hora do build. Para um instalador que os amigos vão usar, gere com o `.env` apontando para o seu servidor (`https://` e `wss://`, passo 10). Sem `.env`, o instalador só funciona com a API e o LiveKit na própria máquina.
+- **Aviso do Windows:** o instalador não é assinado (o certificado custa dinheiro), então o SmartScreen mostra "O Windows protegeu o computador" na primeira vez. É só clicar em "Mais informações" → "Executar assim mesmo".
+- **Ícone:** `apps/desktop/build/icon.png`, gerado a partir da marca do app por `npm run make:icon`. Só precisa rodar de novo se a marca mudar.
+- **Releases do GitHub:** o build não publica nada sozinho (`publish: null`). Subir o `.exe` em Releases é manual.
+- O pacote leva só o app compilado (`out/`). React, LiveKit e SignalR já vão embutidos pelo Vite, por isso ficam em `devDependencies` e o `node_modules` não entra no instalador.
