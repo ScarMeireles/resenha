@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using Resenha.Api.Auth;
 using Resenha.Api.Friends;
+using Resenha.Api.Groups;
 
 namespace Resenha.Api.Tests;
 
@@ -148,5 +149,95 @@ public class RealtimeTests(ApiFactory factory) : IClassFixture<ApiFactory>, IAsy
         await other.StopAsync();
         Assert.Equal(authA.User.Id, (await offline).GetProperty("userId").GetGuid());
         Assert.Equal("offline", (await GetFriends(b)).Friends[0].Presence);
+    }
+
+    [Fact]
+    public async Task Outro_membro_conectado_recebe_messageCreated()
+    {
+        var (a, _) = await factory.CreateLoggedUserAsync();
+        var (_, authB) = await GroupTestHelpers.FriendOf(factory, a);
+        var group = await GroupTestHelpers.CreateGroup(a, "G", authB.User.Id);
+        var connection = CreateConnection(authB.Token);
+        var received = Expect<MessageDto>(connection, "messageCreated");
+        await connection.StartAsync();
+
+        var sent = await GroupTestHelpers.Send(a, group.Id, "oi");
+
+        var message = await received;
+        Assert.Equal(sent.Id, message.Id);
+        Assert.Equal("oi", message.Text);
+    }
+
+    [Fact]
+    public async Task Outro_membro_conectado_recebe_messageDeleted()
+    {
+        var (a, _) = await factory.CreateLoggedUserAsync();
+        var (_, authB) = await GroupTestHelpers.FriendOf(factory, a);
+        var group = await GroupTestHelpers.CreateGroup(a, "G", authB.User.Id);
+        var sent = await GroupTestHelpers.Send(a, group.Id, "oi");
+        var connection = CreateConnection(authB.Token);
+        var deleted = Expect<JsonElement>(connection, "messageDeleted");
+        await connection.StartAsync();
+
+        (await a.DeleteAsync($"/groups/{group.Id}/messages/{sent.Id}")).EnsureSuccessStatusCode();
+
+        var payload = await deleted;
+        Assert.Equal(group.Id, payload.GetProperty("groupId").GetGuid());
+        Assert.Equal(sent.Id, payload.GetProperty("messageId").GetGuid());
+    }
+
+    [Fact]
+    public async Task Quem_e_adicionado_recebe_groupAdded_e_depois_as_mensagens_sem_reconectar()
+    {
+        var (a, _) = await factory.CreateLoggedUserAsync();
+        var (_, authB) = await GroupTestHelpers.FriendOf(factory, a);
+        var group = await GroupTestHelpers.CreateGroup(a, "G");
+        var connection = CreateConnection(authB.Token);
+        var added = Expect<GroupDto>(connection, "groupAdded");
+        var received = Expect<MessageDto>(connection, "messageCreated");
+        await connection.StartAsync();
+
+        (await a.PostAsJsonAsync($"/groups/{group.Id}/members", new AddMembersRequest([authB.User.Id]))).EnsureSuccessStatusCode();
+        Assert.Equal(group.Id, (await added).Id);
+        await GroupTestHelpers.Send(a, group.Id, "bem-vindo");
+
+        Assert.Equal("bem-vindo", (await received).Text);
+    }
+
+    [Fact]
+    public async Task Quem_e_removido_recebe_groupRemoved_e_para_de_receber_mensagens()
+    {
+        var (a, _) = await factory.CreateLoggedUserAsync();
+        var (_, authB) = await GroupTestHelpers.FriendOf(factory, a);
+        var group = await GroupTestHelpers.CreateGroup(a, "G", authB.User.Id);
+        var connection = CreateConnection(authB.Token);
+        var removed = Expect<JsonElement>(connection, "groupRemoved");
+        var messages = new List<MessageDto>();
+        connection.On<MessageDto>("messageCreated", messages.Add);
+        await connection.StartAsync();
+
+        (await a.DeleteAsync($"/groups/{group.Id}/members/{authB.User.Id}")).EnsureSuccessStatusCode();
+        Assert.Equal(group.Id, (await removed).GetProperty("groupId").GetGuid());
+        await GroupTestHelpers.Send(a, group.Id, "ninguém ouve");
+        await Task.Delay(500);
+
+        Assert.Empty(messages);
+    }
+
+    [Fact]
+    public async Task Quem_divide_grupo_sem_ser_amigo_recebe_presenceChanged()
+    {
+        var (a, authA) = await factory.CreateLoggedUserAsync();
+        var (_, authB) = await GroupTestHelpers.FriendOf(factory, a);
+        var (c, authC) = await GroupTestHelpers.FriendOf(factory, a);
+        await GroupTestHelpers.CreateGroup(a, "G", authB.User.Id, authC.User.Id);
+        var watcher = CreateConnection(authB.Token); // B e C não são amigos, só dividem o grupo
+        var online = Expect<JsonElement>(watcher, "presenceChanged",
+            e => e.GetProperty("userId").GetGuid() == authC.User.Id && e.GetProperty("presence").GetString() == "online");
+        await watcher.StartAsync();
+
+        await CreateConnection(authC.Token).StartAsync();
+
+        await online;
     }
 }

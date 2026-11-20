@@ -2,16 +2,28 @@ using ImageMagick;
 
 namespace Resenha.Api.Media;
 
-public enum MediaKind { Avatar, Banner }
+public enum MediaKind { Avatar, Banner, Chat }
 
 public static class MediaKindExtensions
 {
-    public static string Folder(this MediaKind kind) => kind == MediaKind.Avatar ? "avatars" : "banners";
+    public static string Folder(this MediaKind kind) => kind switch
+    {
+        MediaKind.Avatar => "avatars",
+        MediaKind.Banner => "banners",
+        _ => "chat",
+    };
 
-    /// <summary>Tamanho final salvo (largura, altura). Avatar quadrado; banner 3:1.</summary>
-    public static (uint Width, uint Height) TargetSize(this MediaKind kind) =>
-        kind == MediaKind.Avatar ? (256u, 256u) : (960u, 320u);
+    /// <summary>Tamanho final salvo (largura, altura). Avatar quadrado; banner 3:1. No chat é só o limite do maior lado.</summary>
+    public static (uint Width, uint Height) TargetSize(this MediaKind kind) => kind switch
+    {
+        MediaKind.Avatar => (256u, 256u),
+        MediaKind.Banner => (960u, 320u),
+        _ => (ImageProcessor.ChatMaxSide, ImageProcessor.ChatMaxSide),
+    };
 }
+
+/// <summary>WebP pronto e as dimensões finais salvas.</summary>
+public record ProcessedImage(byte[] Webp, int Width, int Height);
 
 public class InvalidImageException(string message) : Exception(message);
 
@@ -22,6 +34,9 @@ public class InvalidImageException(string message) : Exception(message);
 public class ImageProcessor
 {
     public const long MaxUploadBytes = 10 * 1024 * 1024;
+
+    /// <summary>Maior lado de uma imagem de chat: reduz se for maior, nunca amplia, mantém a proporção.</summary>
+    public const uint ChatMaxSide = 1920;
 
     // Limites técnicos contra "bomba de descompressão" (arquivo pequeno que vira gigabytes de pixels na memória).
     private const uint MaxSourceSide = 4096;
@@ -40,7 +55,10 @@ public class ImageProcessor
         ResourceLimits.ListLength = MaxFrames;
     }
 
-    public async Task<byte[]> ToWebpAsync(Stream input, MediaKind kind, CancellationToken ct = default)
+    public async Task<byte[]> ToWebpAsync(Stream input, MediaKind kind, CancellationToken ct = default) =>
+        (await ProcessAsync(input, kind, ct)).Webp;
+
+    public async Task<ProcessedImage> ProcessAsync(Stream input, MediaKind kind, CancellationToken ct = default)
     {
         // O formato é decidido pelos primeiros bytes do arquivo, nunca pelo nome ou pelo que o app disse.
         // Assim o ImageMagick só abre estes quatro formatos (ele sabe abrir dezenas, inclusive alguns perigosos).
@@ -64,8 +82,16 @@ public class ImageProcessor
             {
                 frame.AutoOrient(); // foto de celular "deitada" fica em pé
                 frame.Strip();      // remove EXIF (pode ter localização GPS), perfis e comentários
-                frame.Resize(new MagickGeometry(targetWidth, targetHeight) { FillArea = true });
-                frame.Crop(targetWidth, targetHeight, Gravity.Center); // preenche e corta o excesso, centralizado
+                if (kind == MediaKind.Chat)
+                {
+                    // Chat: cabe em 1920 x 1920 sem cortar; Greater = só reduz, nunca amplia.
+                    frame.Resize(new MagickGeometry(targetWidth, targetHeight) { Greater = true });
+                }
+                else
+                {
+                    frame.Resize(new MagickGeometry(targetWidth, targetHeight) { FillArea = true });
+                    frame.Crop(targetWidth, targetHeight, Gravity.Center); // preenche e corta o excesso, centralizado
+                }
                 frame.ResetPage();
                 frame.Quality = WebpQuality;
                 frame.Settings.SetDefine(MagickFormat.WebP, "lossless", false);
@@ -74,7 +100,7 @@ public class ImageProcessor
 
             using var output = new MemoryStream();
             await source.WriteAsync(output, MagickFormat.WebP, ct);
-            return output.ToArray();
+            return new ProcessedImage(output.ToArray(), (int)source[0].Width, (int)source[0].Height);
         }
         catch (MagickException)
         {

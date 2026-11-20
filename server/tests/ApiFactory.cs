@@ -17,6 +17,9 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// <summary>Pedidos de amizade por minuto, por usuario. Alto por padrao pelo mesmo motivo.</summary>
     public int FriendRequestsPerMinute { get; init; } = 10_000;
 
+    /// <summary>Mensagens de chat por minuto, por usuario. Alto por padrao pelo mesmo motivo.</summary>
+    public int MessagesPerMinute { get; init; } = 10_000;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -24,6 +27,7 @@ public class ApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Jwt:SigningKey", "chave-de-teste-com-mais-de-32-caracteres-123456");
         builder.UseSetting("RateLimit:AuthPerMinute", AuthPerMinute.ToString());
         builder.UseSetting("RateLimit:FriendRequestsPerMinute", FriendRequestsPerMinute.ToString());
+        builder.UseSetting("RateLimit:MessagesPerMinute", MessagesPerMinute.ToString());
     }
 
     protected override void Dispose(bool disposing)

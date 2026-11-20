@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
-import { Avatar } from '../components/Avatar'
-import { HeadphonesIcon, LogOutIcon, MicIcon, PlusIcon, SettingsIcon, UserPlusIcon, UsersIcon } from '../components/Icons'
-import { useFriends } from '../hooks/useFriends'
-import { mediaUrl, type User } from '../lib/api'
+import { PlusIcon, UserPlusIcon, UsersIcon } from '../components/Icons'
+import { UserPanel } from '../components/UserPanel'
+import { useRealtime } from '../hooks/useRealtime'
+import type { User } from '../lib/api'
+import { initials } from '../lib/groups'
+import { ChatView } from './ChatView'
 import { FriendsView } from './FriendsView'
+import { CreateGroupModal } from './GroupModals'
+import { GroupSidebar } from './GroupSidebar'
+import { MembersPanel } from './MembersPanel'
 import './Shell.css'
+import './Chat.css'
 
 interface Props {
   user: User
@@ -14,105 +20,107 @@ interface Props {
 }
 
 /**
- * Layout dos mockups: trilho de grupos | barra lateral | conteúdo.
- * Amigos (pedidos e presença em tempo real) já vêm da API; grupos e chamadas ainda não existem e mostram o estado vazio.
+ * Layout dos mockups: trilho de grupos | barra lateral | conteúdo (| membros, dentro de um grupo).
+ * Amigos, grupos e mensagens vêm da API e se atualizam em tempo real por uma conexão só.
  */
 export function Shell({ user, token, notice, onSignOut }: Props) {
   const [banner, setBanner] = useState(notice)
-  const { state: friends, sendRequest, accept, removeRequest } = useFriends(token)
+  const data = useRealtime(token)
+  const { friends, groups } = data
+  const [openId, setOpenId] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
   const addFriendInput = useRef<HTMLInputElement>(null)
   const pending = friends.incoming.length
+  const group = groups.find((g) => g.id === openId)
+
+  // Se o grupo aberto sumir (saí, fui removido), volta para Amigos.
+  useEffect(() => {
+    if (openId && data.groupsLoaded && !group) setOpenId(null)
+  }, [openId, data.groupsLoaded, group])
 
   return (
-    <div className="shell">
+    <div className={`shell${group ? ' shell--group' : ''}`}>
       <nav className="rail" aria-label="Grupos">
         <div className="rail-item">
-          <span className="rail-pill" aria-hidden="true" />
-          <button className="rail-home" aria-label="Início" aria-current="page">R</button>
+          {!group && <span className="rail-pill" aria-hidden="true" />}
+          <button className="rail-button rail-home" aria-label="Amigos" title="Amigos" aria-current={group ? undefined : 'page'}
+            onClick={() => setOpenId(null)}>
+            R
+          </button>
         </div>
         <div className="rail-divider" aria-hidden="true" />
-        <button className="rail-add" aria-label="Criar grupo (em breve)" title="Em breve" disabled>
+        {groups.map((g) => (
+          <div className="rail-item" key={g.id}>
+            {g.id === group?.id && <span className="rail-pill" aria-hidden="true" />}
+            <button className="rail-button rail-group" aria-label={g.name} title={g.name} aria-current={g.id === group?.id ? 'page' : undefined}
+              onClick={() => setOpenId(g.id)}>
+              {initials(g.name)}
+            </button>
+          </div>
+        ))}
+        <button className="rail-add" aria-label="Criar grupo" title="Criar grupo" onClick={() => setCreating(true)}>
           <PlusIcon size={22} />
         </button>
       </nav>
 
-      <aside className="sidebar">
-        <header className="pane-header">
-          <h1 className="sidebar-title">Início</h1>
-        </header>
-        <div className="sidebar-body">
-          <button className="sidebar-link" aria-current="page">
-            <UsersIcon /> Amigos
-            {pending > 0 && <span className="sidebar-badge" aria-label={`${pending} pedidos recebidos`}>{pending}</span>}
-          </button>
-          <h2 className="sidebar-section">Conversas</h2>
-          <p className="sidebar-empty">Suas conversas e grupos aparecem aqui.</p>
-        </div>
-        <UserPanel user={user} onSignOut={onSignOut} />
-      </aside>
+      {group ? (
+        <>
+          <GroupSidebar group={group} user={user} friends={friends.friends} onSignOut={onSignOut}
+            onRename={(name) => data.renameGroup(group.id, name)}
+            onAddMembers={(ids) => data.addMembers(group.id, ids)}
+            onLeave={() => data.removeMember(group.id, user.id, true)} />
+          <ChatView key={group.id} group={group} user={user} chat={data.messages[group.id]}
+            onLoad={() => data.loadMessages(group.id)}
+            onLoadOlder={(before) => data.loadOlder(group.id, before)}
+            onSend={(text, images) => data.sendMessage(group.id, text, images)}
+            onDelete={(messageId) => data.deleteMessage(group.id, messageId)} />
+          <MembersPanel group={group} meId={user.id} onRemove={(userId) => data.removeMember(group.id, userId, false)} />
+        </>
+      ) : (
+        <>
+          <aside className="sidebar">
+            <header className="pane-header">
+              <h1 className="sidebar-title">Início</h1>
+            </header>
+            <div className="sidebar-body">
+              <button className="sidebar-link" aria-current="page">
+                <UsersIcon /> Amigos
+                {pending > 0 && <span className="sidebar-badge" aria-label={`${pending} pedidos recebidos`}>{pending}</span>}
+              </button>
+              <h2 className="sidebar-section">Conversas</h2>
+              <p className="sidebar-empty">Seus grupos aparecem no trilho à esquerda.</p>
+            </div>
+            <UserPanel user={user} onSignOut={onSignOut} />
+          </aside>
 
-      <main className="content">
-        <header className="pane-header content-header">
-          <UsersIcon size={20} />
-          <h2>Amigos</h2>
-          <button className="pill-button" onClick={() => addFriendInput.current?.focus()}>
-            <UserPlusIcon size={16} /> Adicionar amigo
-          </button>
-        </header>
+          <main className="content">
+            <header className="pane-header content-header">
+              <UsersIcon size={20} />
+              <h2>Amigos</h2>
+              <button className="pill-button" onClick={() => addFriendInput.current?.focus()}>
+                <UserPlusIcon size={16} /> Adicionar amigo
+              </button>
+            </header>
 
-        {banner && (
-          <div className="content-banner" role="alert">
-            <span>{banner}</span>
-            <button className="btn-link" onClick={() => setBanner(undefined)}>Fechar</button>
-          </div>
-        )}
+            {banner && (
+              <div className="content-banner" role="alert">
+                <span>{banner}</span>
+                <button className="btn-link" onClick={() => setBanner(undefined)}>Fechar</button>
+              </div>
+            )}
 
-        <FriendsView state={friends} inputRef={addFriendInput} onSendRequest={sendRequest} onAccept={accept}
-          onRemoveRequest={removeRequest} />
-      </main>
-    </div>
-  )
-}
+            <FriendsView state={friends} inputRef={addFriendInput} onSendRequest={data.sendRequest} onAccept={data.accept}
+              onRemoveRequest={data.removeRequest} />
+          </main>
+        </>
+      )}
 
-function UserPanel({ user, onSignOut }: { user: User; onSignOut(): void }) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const panelRef = useRef<HTMLDivElement>(null)
-
-  // Fecha o menu ao clicar fora ou apertar Esc.
-  useEffect(() => {
-    if (!menuOpen) return
-    const onPointer = (e: PointerEvent) => {
-      if (!panelRef.current?.contains(e.target as Node)) setMenuOpen(false)
-    }
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false)
-    document.addEventListener('pointerdown', onPointer)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('pointerdown', onPointer)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [menuOpen])
-
-  return (
-    <div className="user-panel" ref={panelRef}>
-      <Avatar name={user.displayName} seed={user.id} src={mediaUrl(user.avatarUrl)} presence="online" ringColor="var(--bg-panel)" />
-      <div className="user-panel-names">
-        <span className="user-panel-name">{user.displayName}</span>
-        <span className="user-panel-handle">@{user.username}</span>
-      </div>
-      <button className="icon-button" aria-label="Microfone (em breve)" title="Em breve" disabled><MicIcon /></button>
-      <button className="icon-button" aria-label="Som (em breve)" title="Em breve" disabled><HeadphonesIcon /></button>
-      <button className="icon-button" aria-label="Configurações da conta" aria-haspopup="menu" aria-expanded={menuOpen}
-        onClick={() => setMenuOpen((v) => !v)}>
-        <SettingsIcon />
-      </button>
-
-      {menuOpen && (
-        <div className="user-menu" role="menu">
-          <button role="menuitem" className="user-menu-item user-menu-item--danger" onClick={onSignOut} autoFocus>
-            <LogOutIcon /> Sair da conta
-          </button>
-        </div>
+      {creating && (
+        <CreateGroupModal friends={friends.friends} onClose={() => setCreating(false)}
+          onCreate={async (name, memberIds) => {
+            const created = await data.createGroup(name, memberIds)
+            setOpenId(created.id)
+          }} />
       )}
     </div>
   )
