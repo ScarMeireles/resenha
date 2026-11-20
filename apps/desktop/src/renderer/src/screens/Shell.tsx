@@ -1,21 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
 import { Avatar } from '../components/Avatar'
 import { HeadphonesIcon, LogOutIcon, MicIcon, PlusIcon, SettingsIcon, UserPlusIcon, UsersIcon } from '../components/Icons'
+import { useFriends } from '../hooks/useFriends'
 import { mediaUrl, type User } from '../lib/api'
+import { FriendsView } from './FriendsView'
 import './Shell.css'
 
 interface Props {
   user: User
+  token: string
   notice?: string
   onSignOut(): void
 }
 
 /**
  * Layout dos mockups: trilho de grupos | barra lateral | conteúdo.
- * Amigos, grupos e chamadas ainda não existem na API, então as áreas mostram o estado vazio.
+ * Amigos (pedidos e presença em tempo real) já vêm da API; grupos e chamadas ainda não existem e mostram o estado vazio.
  */
-export function Shell({ user, notice, onSignOut }: Props) {
+export function Shell({ user, token, notice, onSignOut }: Props) {
   const [banner, setBanner] = useState(notice)
+  const { state: friends, sendRequest, accept, removeRequest } = useFriends(token)
+  const addFriendInput = useRef<HTMLInputElement>(null)
+  const pending = friends.incoming.length
 
   return (
     <div className="shell">
@@ -37,6 +43,7 @@ export function Shell({ user, notice, onSignOut }: Props) {
         <div className="sidebar-body">
           <button className="sidebar-link" aria-current="page">
             <UsersIcon /> Amigos
+            {pending > 0 && <span className="sidebar-badge" aria-label={`${pending} pedidos recebidos`}>{pending}</span>}
           </button>
           <h2 className="sidebar-section">Conversas</h2>
           <p className="sidebar-empty">Suas conversas e grupos aparecem aqui.</p>
@@ -48,7 +55,7 @@ export function Shell({ user, notice, onSignOut }: Props) {
         <header className="pane-header content-header">
           <UsersIcon size={20} />
           <h2>Amigos</h2>
-          <button className="pill-button" disabled title="Em breve">
+          <button className="pill-button" onClick={() => addFriendInput.current?.focus()}>
             <UserPlusIcon size={16} /> Adicionar amigo
           </button>
         </header>
@@ -60,11 +67,8 @@ export function Shell({ user, notice, onSignOut }: Props) {
           </div>
         )}
 
-        <section className="content-empty">
-          <Avatar name={user.displayName} seed={user.id} src={mediaUrl(user.avatarUrl)} size={88} ringColor="var(--bg-main)" />
-          <h3>Boas-vindas ao Resenha, {user.displayName}</h3>
-          <p>Ainda não tem ninguém por aqui. Em breve você vai adicionar amigos pelo @ e criar grupos com chat e sala de voz.</p>
-        </section>
+        <FriendsView state={friends} inputRef={addFriendInput} onSendRequest={sendRequest} onAccept={accept}
+          onRemoveRequest={removeRequest} />
       </main>
     </div>
   )

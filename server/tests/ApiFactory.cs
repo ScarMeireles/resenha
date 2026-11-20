@@ -14,12 +14,16 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// <summary>Tentativas de login/cadastro por minuto. Alto por padrão para não atrapalhar os outros testes.</summary>
     public int AuthPerMinute { get; init; } = 10_000;
 
+    /// <summary>Pedidos de amizade por minuto, por usuario. Alto por padrao pelo mesmo motivo.</summary>
+    public int FriendRequestsPerMinute { get; init; } = 10_000;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("Storage:Root", DataRoot);
         builder.UseSetting("Jwt:SigningKey", "chave-de-teste-com-mais-de-32-caracteres-123456");
         builder.UseSetting("RateLimit:AuthPerMinute", AuthPerMinute.ToString());
+        builder.UseSetting("RateLimit:FriendRequestsPerMinute", FriendRequestsPerMinute.ToString());
     }
 
     protected override void Dispose(bool disposing)

@@ -8,10 +8,12 @@ namespace Resenha.Api.Auth;
 public record RegisterRequest(string? Username, string? DisplayName, string? Password);
 public record LoginRequest(string? Username, string? Password);
 public record AuthResponse(string Token, DateTimeOffset ExpiresAt, UserDto User);
+public record UsernameAvailability(bool Available, string? Error);
 
 public static class AuthEndpoints
 {
     public const string RateLimitPolicy = "auth";
+    public const string UsernameCheckRateLimitPolicy = "username-check";
 
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
@@ -20,6 +22,7 @@ public static class AuthEndpoints
         auth.MapPost("/register", Register).RequireRateLimiting(RateLimitPolicy);
         auth.MapPost("/login", Login).RequireRateLimiting(RateLimitPolicy);
         auth.MapPost("/refresh", Refresh).RequireAuthorization();
+        auth.MapGet("/username-available", UsernameAvailable).RequireRateLimiting(UsernameCheckRateLimitPolicy);
     }
 
     private static async Task<IResult> Register(
@@ -94,6 +97,16 @@ public static class AuthEndpoints
 
         var (token, expiresAt) = tokens.Create(user);
         return Results.Ok(new AuthResponse(token, expiresAt, UserDto.From(user)));
+    }
+
+    /// <summary>Usado pela tela de cadastro para mostrar em tempo real se o @ está livre. Não exige login.</summary>
+    private static async Task<IResult> UsernameAvailable(string? u, AppDbContext db)
+    {
+        var username = AccountRules.NormalizeUsername(u);
+        if (AccountRules.ValidateUsername(username) is { } error)
+            return Results.Ok(new UsernameAvailability(false, error));
+        var taken = await db.Users.AnyAsync(x => x.Username == username);
+        return Results.Ok(new UsernameAvailability(!taken, null));
     }
 
     private static IResult UsernameTaken() =>

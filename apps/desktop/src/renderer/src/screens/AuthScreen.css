@@ -79,6 +79,7 @@
 
 .auth-hint { font-size: 13px; color: var(--text-faint); line-height: 1.4; }
 .auth-valid { font-size: 13px; color: var(--green); }
+.auth-taken { font-size: 13px; color: var(--red); }
 .auth-errors { margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--red); line-height: 1.4; }
 
 .auth-form-error {

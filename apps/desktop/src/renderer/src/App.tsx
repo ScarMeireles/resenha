@@ -67,6 +67,6 @@ export function App() {
     case 'signedOut':
       return <AuthScreen onAuthenticated={signIn} />
     case 'signedIn':
-      return <Shell user={state.user} notice={state.notice} onSignOut={signOut} />
+      return <Shell user={state.user} token={state.token} notice={state.notice} onSignOut={signOut} />
   }
 }
