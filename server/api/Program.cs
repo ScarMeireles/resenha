@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Resenha.Api.Accounts;
 using Resenha.Api.Auth;
+using Resenha.Api.Calls;
 using Resenha.Api.Data;
 using Resenha.Api.Friends;
 using Resenha.Api.Groups;
@@ -16,6 +17,20 @@ using Resenha.Api.Media;
 using Resenha.Api.Realtime;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// --- LiveKit: o mesmo infra/.env que sobe o servidor de voz serve para a API (LIVEKIT_API_KEY / LIVEKIT_API_SECRET).
+// Valores já configurados (appsettings, variável LiveKit__ApiKey...) têm prioridade; o .env só preenche o que faltar.
+var livekitFallback = new Dictionary<string, string?>();
+foreach (var (setting, envName) in new[] { ("LiveKit:ApiKey", "LIVEKIT_API_KEY"), ("LiveKit:ApiSecret", "LIVEKIT_API_SECRET") })
+{
+    if (!string.IsNullOrEmpty(builder.Configuration[setting])) continue;
+    var value = builder.Configuration[envName];
+    if (string.IsNullOrEmpty(value) && builder.Environment.IsDevelopment()
+        && DotEnv.FindInfraEnv(builder.Environment.ContentRootPath) is { } envFile)
+        DotEnv.Parse(File.ReadAllText(envFile)).TryGetValue(envName, out value);
+    if (!string.IsNullOrEmpty(value)) livekitFallback[setting] = value;
+}
+builder.Configuration.AddInMemoryCollection(livekitFallback);
 
 // --- Pastas de dados: banco SQLite e imagens ficam em {Storage:Root} (padrão: server/api/.data, ignorada no Git)
 var dataRoot = Path.GetFullPath(builder.Configuration["Storage:Root"] ?? ".data", builder.Environment.ContentRootPath);
@@ -36,6 +51,17 @@ builder.Services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, SubU
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddSingleton<FriendNotifier>();
 builder.Services.AddSingleton<GroupNotifier>();
+builder.Services.AddSingleton<VoiceTracker>();
+builder.Services.AddSingleton<CallTracker>();
+builder.Services.AddSingleton<CallNotifier>();
+builder.Services.AddSingleton<LiveKitTokenService>();
+builder.Services.AddScoped<PresenceNotifier>();
+
+// --- LiveKit (voz): sem chave/segredo a API nem sobe, com mensagem clara
+builder.Services.AddOptions<LiveKitOptions>()
+    .Bind(builder.Configuration.GetSection(LiveKitOptions.Section))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 // --- Login: token JWT assinado com Jwt:SigningKey (segredo fora do Git)
 builder.Services.AddOptions<JwtOptions>()
@@ -90,6 +116,7 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 // --- Limite de tentativas em cadastro/login, por IP, contra quem tenta adivinhar senha
 var authPerMinute = builder.Configuration.GetValue("RateLimit:AuthPerMinute", 10);
 var friendRequestsPerMinute = builder.Configuration.GetValue("RateLimit:FriendRequestsPerMinute", 20);
+var callsPerMinute = builder.Configuration.GetValue("RateLimit:CallsPerMinute", 20);
 var messagesPerMinute = builder.Configuration.GetValue("RateLimit:MessagesPerMinute", 30);
 builder.Services.AddRateLimiter(options =>
 {
@@ -109,6 +136,10 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy(GroupEndpoints.MessageRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
         FriendEndpoints.RateLimitKey(http),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = messagesPerMinute, Window = TimeSpan.FromMinutes(1) }));
+    // Ligações 1:1: por usuário logado.
+    options.AddPolicy(CallEndpoints.CallRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
+        FriendEndpoints.RateLimitKey(http),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = callsPerMinute, Window = TimeSpan.FromMinutes(1) }));
 });
 
 var app = builder.Build();
@@ -138,6 +169,9 @@ app.MapAuthEndpoints();
 app.MapAccountEndpoints();
 app.MapFriendEndpoints();
 app.MapGroupEndpoints();
+app.MapVoiceEndpoints();
+app.MapCallEndpoints();
+app.MapLiveKitWebhook();
 app.MapHub<AppHub>("/hubs/app");
 
 app.Run();
