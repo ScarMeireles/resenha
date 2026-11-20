@@ -79,8 +79,9 @@ export function CallView({ crumbs, connecting, participants, resolve, connectedA
           aria-label={micOff ? 'Ligar microfone' : 'Desligar microfone'} aria-pressed={micOff}>
           {micOff ? <MicOffIcon size={22} /> : <MicIcon size={22} />}
         </button>
-        <button className={`call-btn${cameraOn ? '' : ' call-btn--off'}`} onClick={onToggleCamera}
-          aria-label={cameraOn ? 'Desligar câmera' : 'Ligar câmera'} aria-pressed={!cameraOn}>
+        {/* Câmera desligada é o estado normal: botão neutro (só o ícone muda), diferente do mic mutado. */}
+        <button className="call-btn" onClick={onToggleCamera}
+          aria-label={cameraOn ? 'Desligar câmera' : 'Ligar câmera'} aria-pressed={cameraOn}>
           {cameraOn ? <VideoIcon size={22} /> : <VideoOffIcon size={22} />}
         </button>
         <button className={`call-btn${prefs.deafened ? ' call-btn--off' : ''}`} onClick={onToggleDeafen}

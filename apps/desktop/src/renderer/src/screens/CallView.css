@@ -36,8 +36,10 @@
   padding: 0;
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  align-content: start;
+  /* Tiles de 240 a 480 px, centralizados: com 1–2 pessoas o vídeo não estica pela tela toda. */
+  grid-template-columns: repeat(auto-fit, minmax(240px, 480px));
+  justify-content: center;
+  align-content: center;
   gap: 12px;
   overflow-y: auto;
 }
