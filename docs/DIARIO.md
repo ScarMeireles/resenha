@@ -4,6 +4,13 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 20:13 — execução automática (resenha-continuar)
+- Encontrou o passo 11 sem commit em `feature/passo-11-instalador`. Rodou typecheck, `npm test` (176 ok), build do app e `dotnet test server` (149 ok): tudo passou.
+- Enquanto os testes rodavam, a sessão interativa commitou (`8f6e3e1`) e fez merge em `hml` (`6a2435f`). Os commits desta execução não tiveram efeito, e nada foi duplicado.
+- O checkbox do passo 11 continua aberto porque falta publicar em Releases.
+- Dúvida nova: D6 (bloqueante). O passo 10 e a publicação precisam de conta na Oracle, push e Releases, que esta automação não pode fazer.
+- Parada: todo o roteiro restante depende da D6. Continuar quando a D6 for respondida.
+
 ## 20/11/2026 — sessão interativa (passo 11, instalador)
 - O usuário escolheu o passo 11 antes do 10. Branch `feature/passo-11-instalador`.
 - Instalado `electron-builder` 26.18.0 (gratuito) como devDependency. A configuração está em `apps/desktop/electron-builder.yml`:

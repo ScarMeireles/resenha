@@ -10,7 +10,13 @@ Status possíveis: `aberta` (ainda não bloqueia), `bloqueante` (trava um passo)
 
 ## Abertas
 
-_Nenhuma no momento. D1 a D5 foram respondidas no chat em 20/11/2026 (registradas abaixo em Resolvidas, como R6 a R10)._
+### D6 — Hospedagem na Oracle e publicação do instalador
+- Status: bloqueante
+- Passo: 10 e o fim do 11
+- Contexto: os passos que sobraram precisam de coisas que a automação não pode fazer: criar a conta e a VM na Oracle Cloud (Always Free), configurar domínio/HTTPS e chaves do LiveKit, fazer `git push` e subir o `.exe` em Releases do GitHub.
+- Opções: A) você cria a conta e a VM na Oracle numa sessão interativa, com a automação guiando passo a passo e preparando os arquivos de deploy (recomendado) · B) a automação prepara agora só os arquivos de deploy (Docker Compose, Caddy, script de instalação) sem tocar em conta nenhuma, e você sobe depois.
+- Enquanto isso: nada mais do roteiro está livre; o instalador já sai com `npm run dist`.
+- Resposta:
 
 <!-- Modelo:
 ### D1 — Título curto
