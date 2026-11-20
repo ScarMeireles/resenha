@@ -4,6 +4,15 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 10:14–10:30 — automação agendada (passo 8, compartilhar tela)
+- Passo 8 pronto e mergeado em `hml` (`c24eadc`). Branch `feature/passo-8-tela`, commits `1b58da4` (token libera `screen_share`/`screen_share_audio`), `bdbe0d3` (main/preload/voz/hook), `c5b7089` (D4), `da7d7fd` (seletor e palco), `ac5aefa` (correção) e `0c69614` (README).
+- Electron: `src/main/screen.ts` lista telas/janelas (sem a do Resenha) e entrega a escolhida pelo `setDisplayMediaRequestHandler`; escolha de uso único com validade de 15 s (`screenChoice.ts`, com teste). Áudio do sistema com `loopback`. App: seletor `ScreenPicker` (abas Telas/Janelas), palco com a tela grande e faixa de tiles, rótulo "Tela de X · 1080p · com áudio", botão laranja quando ativo. Mídia: 1080p 30 fps VP8, `ScreenSharePresets.h1080fps30`, `contentHint: 'motion'`. Testes: API 141, app 136; build OK.
+- Teste real com dois Electron (contas locais novas @tela_a31418/@tela_b31418, grupo "Grupo Tela"): os 6 itens passaram (seletor, palco, áudio extra, parar, cancelar). Quem assiste recebeu 540p pela camada simulcast (quem compartilha manda 1080p); vale revisar as camadas da tela no passo 9.
+- Bug achado e corrigido: o `<audio>` oculto da faixa remota sobrava no `body` quando quem publica parava (o `detach()` voltava vazio). Agora `voice.ts` guarda o elemento por faixa num `Map`. Esse ajuste não foi testado de novo com dois apps, só com testes, typecheck e build.
+- Achado sem correção: o `RealtimeTests.Quem_e_adicionado_recebe_groupAdded…` da API falhou uma vez e passou ao rodar de novo, então parece instável. Ver depois.
+- Dúvida nova: D4 (seletor, áudio do computador desmarcado por padrão, várias telas ao mesmo tempo), aberta e não bloqueante. Fiz a opção recomendada.
+- Parada pela regra 9 (5 tarefas), com uso de 5 h em 68%. Próximo: passo 9 (qualidade: presets de bitrate, simulcast, supressão de ruído, seleção de microfone/fone). Os pontos de partida são `connectVoice` em `apps/desktop/src/renderer/src/lib/voice.ts` (opções do `Room` e `setScreenShare`) e as camadas de simulcast da tela.
+
 ## 20/11/2026 09:14–09:35 — automação agendada (passo 7, câmera)
 - Passo 7 pronto e mergeado em `hml` (`28eebff`). Branch `feature/passo-7-camera`, commits `939cc9d` (token libera `camera`), `be0583a` (voice/hook), `2a22b71` (tela), `7e51812` (ajustes), `6985d4d` (CSP) e `7bb5a25` (README).
 - App: botão de câmera na barra (neutro quando desligada), vídeo no lugar do avatar (o seu espelhado), tiles 16:9 de 240 a 480 px centralizados. Captura em 720p 30 fps, VP8, simulcast 180p/360p, `adaptiveStream` e `dynacast`. Nova ação `notice` no `callReducer` mostra "Não foi possível ligar a câmera." sem derrubar a chamada. Ícones novos `VideoIcon`/`VideoOffIcon` (já existia um `CameraIcon` de foto). Testes: API 141, app 121.
