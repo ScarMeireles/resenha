@@ -46,7 +46,7 @@ public class LiveKitTokenTests
         Assert.True(root.GetProperty("canPublish").GetBoolean());
         Assert.True(root.GetProperty("canSubscribe").GetBoolean());
         Assert.False(root.GetProperty("canPublishData").GetBoolean());
-        Assert.Equal(["microphone"], root.GetProperty("canPublishSources").EnumerateArray().Select(e => e.GetString()));
+        Assert.Equal(["microphone", "camera"], root.GetProperty("canPublishSources").EnumerateArray().Select(e => e.GetString()));
     }
 
     [Fact]
