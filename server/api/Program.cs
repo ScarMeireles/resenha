@@ -10,7 +10,9 @@ using Microsoft.IdentityModel.Tokens;
 using Resenha.Api.Accounts;
 using Resenha.Api.Auth;
 using Resenha.Api.Data;
+using Resenha.Api.Friends;
 using Resenha.Api.Media;
+using Resenha.Api.Realtime;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,10 @@ builder.Services.AddSingleton<ImageProcessor>();
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddProblemDetails();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, SubUserIdProvider>();
+builder.Services.AddSingleton<PresenceTracker>();
+builder.Services.AddSingleton<FriendNotifier>();
 
 // --- Login: token JWT assinado com Jwt:SigningKey (segredo fora do Git)
 builder.Services.AddOptions<JwtOptions>()
@@ -50,6 +56,15 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
         };
         bearer.Events = new JwtBearerEvents
         {
+            // O SignalR (WebSocket/long polling) não consegue mandar cabeçalho Authorization: o token vai na query.
+            // Só aceitamos isso nas rotas /hubs, para o token não circular em URL de outras rotas.
+            OnMessageReceived = context =>
+            {
+                var token = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(token) && context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                    context.Token = token;
+                return Task.CompletedTask;
+            },
             // Token só vale se a conta ainda existe e o carimbo de segurança não mudou
             // (ex.: troca de senha encerra as sessões antigas).
             OnTokenValidated = async context =>
@@ -72,12 +87,21 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 
 // --- Limite de tentativas em cadastro/login, por IP, contra quem tenta adivinhar senha
 var authPerMinute = builder.Configuration.GetValue("RateLimit:AuthPerMinute", 10);
+var friendRequestsPerMinute = builder.Configuration.GetValue("RateLimit:FriendRequestsPerMinute", 20);
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.AddPolicy(AuthEndpoints.RateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
         http.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = authPerMinute, Window = TimeSpan.FromMinutes(1) }));
+    // Checagem de @ disponível (tela de cadastro): mesmo limite, mas balde separado, para não gastar as tentativas de cadastro/login.
+    options.AddPolicy(AuthEndpoints.UsernameCheckRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
+        http.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = authPerMinute, Window = TimeSpan.FromMinutes(1) }));
+    // Pedidos de amizade: por usuário logado (IP se não houver).
+    options.AddPolicy(FriendEndpoints.RequestRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
+        FriendEndpoints.RateLimitKey(http),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = friendRequestsPerMinute, Window = TimeSpan.FromMinutes(1) }));
 });
 
 var app = builder.Build();
@@ -105,5 +129,7 @@ app.UseRateLimiter();
 app.MapGet("/health", () => Results.Ok("ok"));
 app.MapAuthEndpoints();
 app.MapAccountEndpoints();
+app.MapFriendEndpoints();
+app.MapHub<AppHub>("/hubs/app");
 
 app.Run();
