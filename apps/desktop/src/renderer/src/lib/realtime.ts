@@ -1,4 +1,4 @@
-import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
+import { HubConnectionBuilder, LogLevel, type IHttpConnectionOptions } from '@microsoft/signalr'
 import { apiUrl } from './api'
 import type { FriendDto, FriendPresence, FriendRequestDto } from './friends'
 
@@ -18,9 +18,19 @@ export interface Realtime {
   stop(): Promise<void>
 }
 
+/**
+ * Opções da conexão com o hub.
+ * `withCredentials: false` é obrigatório: por padrão o cliente SignalR manda cookies, mas a API libera
+ * qualquer origem (CORS "*") justamente porque não usa cookie. O navegador recusa "*" + cookies e a
+ * conexão nunca abre. O login vai no token (accessTokenFactory), não em cookie.
+ */
+export function hubConnectionOptions(token: string): IHttpConnectionOptions {
+  return { accessTokenFactory: () => token, withCredentials: false }
+}
+
 export function createRealtime(token: string, handlers: RealtimeHandlers): Realtime {
   const connection = new HubConnectionBuilder()
-    .withUrl(`${apiUrl}/hubs/app`, { accessTokenFactory: () => token })
+    .withUrl(`${apiUrl}/hubs/app`, hubConnectionOptions(token))
     .withAutomaticReconnect()
     .configureLogging(LogLevel.Warning)
     .build()
