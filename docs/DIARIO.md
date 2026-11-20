@@ -4,6 +4,13 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (teste real do passo 9)
+- Teste com dois Electron numa ligação 1:1 (contas locais @q9_a2421/@q9_b2421, mídia falsa). Passaram: áudio nos dois sentidos, troca de microfone e saída durante a chamada, supressão de ruído liga/desliga, tela em Normal (camadas 720p e 1080p; quem assiste recebe 1080p com palco grande ou 720p na janela padrão, pelo `adaptiveStream`; antes eram 540p) e Economia (720p 15 fps). Nenhum erro no console.
+- Bug corrigido (`e5cdd14`): voltar a câmera para "Padrão do sistema" encerrava a faixa de vídeo, porque o LiveKit pedia o aparelho `default` como obrigatório (`exact`). Agora `deviceArgs` em `voice.ts` manda `default` sem `exact`. Testes do app: 151.
+- **Ainda sem prova:** os 60 fps do nível Alta. O encoder está em 60 fps, mas esta máquina só captura 20 fps, mesmo sem LiveKit. Causa provável: o monitor virtual do Parsec. Reconferir numa máquina sem ele.
+- Fica para depois: se o aparelho escolhido for desconectado, a faixa morre e o app só avisa "Não foi possível trocar o aparelho".
+- O roteiro do teste com dois apps agora está em `docs/AUTOMACAO.md`.
+
 ## 20/11/2026 — sessão interativa (dúvidas e verificação de segredos)
 - D1 a D5 respondidas no chat e movidas para "Resolvidas" (R6 a R10 em `docs/DUVIDAS.md`). Trabalho novo que saiu delas:
   - Status clicável com Online, Ausente e Offline. "Offline" funciona como invisível.

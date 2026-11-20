@@ -1,6 +1,6 @@
 import type { Track } from 'livekit-client'
 import { describe, expect, it } from 'vitest'
-import { formatDuration, formatScreenLabel, micEnabled, pickStage, toParticipantViews, type MicPrefs, type ParticipantView, type RawParticipant } from './voice'
+import { deviceArgs, formatDuration,formatScreenLabel, micEnabled, pickStage, toParticipantViews, type MicPrefs, type ParticipantView, type RawParticipant } from './voice'
 
 const raw = (identity: string, extra: Partial<RawParticipant> = {}): RawParticipant => ({
   identity, isLocal: false, isSpeaking: false, isMicrophoneEnabled: true, cameraTrack: null, screenTrack: null, hasScreenAudio: false, ...extra,
@@ -108,5 +108,15 @@ describe('pickStage', () => {
 
   it('só você compartilhando: você no palco', () => {
     expect(pickStage([view('me', { isLocal: true, screen }), view('a')], null)?.id).toBe('me')
+  })
+})
+
+describe('deviceArgs (trocar aparelho durante a chamada)', () => {
+  it('aparelho escolhido vai como obrigatório', () => {
+    expect(deviceArgs('abc')).toEqual(['abc', true])
+  })
+
+  it('"Padrão do sistema" vai como preferência, nunca obrigatório (senão a câmera morre)', () => {
+    expect(deviceArgs(null)).toEqual(['default', false])
   })
 })

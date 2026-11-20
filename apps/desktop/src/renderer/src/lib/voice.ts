@@ -104,6 +104,15 @@ const toRaw = (p: Participant): RawParticipant => {
   }
 }
 
+/**
+ * Argumentos do switchActiveDevice do LiveKit. "Padrão do sistema" (null) vai como 'default' sem `exact`: por padrão
+ * o LiveKit pede o aparelho como restrição obrigatória, e a câmera não tem um aparelho chamado 'default' (o Chromium
+ * recusa e a câmera ficava encerrada em silêncio). Sem `exact`, 'default' é só preferência e o sistema escolhe.
+ */
+export function deviceArgs(id: string | null): [deviceId: string, exact: boolean] {
+  return id === null ? ['default', false] : [id, true]
+}
+
 export async function connectVoice(
   credentials: VoiceCredentials, initial: MicPrefs, handlers: VoiceHandlers, settings: MediaSettings = DEFAULT_MEDIA_SETTINGS,
 ): Promise<VoiceConnection> {
@@ -180,9 +189,9 @@ export async function connectVoice(
     async applySettings(next) {
       const prev = current
       current = next
-      if (next.audioInputId !== prev.audioInputId) await room.switchActiveDevice('audioinput', next.audioInputId ?? 'default')
-      if (next.audioOutputId !== prev.audioOutputId) await room.switchActiveDevice('audiooutput', next.audioOutputId ?? 'default')
-      if (next.videoInputId !== prev.videoInputId) await room.switchActiveDevice('videoinput', next.videoInputId ?? 'default')
+      if (next.audioInputId !== prev.audioInputId) await room.switchActiveDevice('audioinput', ...deviceArgs(next.audioInputId))
+      if (next.audioOutputId !== prev.audioOutputId) await room.switchActiveDevice('audiooutput', ...deviceArgs(next.audioOutputId))
+      if (next.videoInputId !== prev.videoInputId) await room.switchActiveDevice('videoinput', ...deviceArgs(next.videoInputId))
       if (next.noiseSuppression !== prev.noiseSuppression) {
         const track = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track
         if (track instanceof LocalAudioTrack) {
