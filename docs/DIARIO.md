@@ -4,6 +4,14 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 08:14–08:45 — automação agendada (passo 6, voz)
+- Passo 6 pronto e mergeado em `hml` (`cab85ee`). Branch `feature/passo-6-voz`, commits `d9664ce`, `b36d564`, `311b20a` (API e infra), `6c121a8` (D3), `c68af82`, `deae947`, `bc3b17a`, `84c5a07` (app) e `239c1cb` (README).
+- API: token do LiveKit, voz do grupo (`/groups/{id}/voice`), ligação 1:1 (`/calls/{amigoId}` e accept/decline/cancel/hangup), webhook `POST /livekit/webhook` com assinatura conferida, presença `in-call`. Em dev a API lê as chaves do `infra/.env`. Testes: 141.
+- App: `livekit-client` 2.24.1 (instalado), tela da chamada, sala de voz na barra lateral, "NA CHAMADA" nos membros, botão Ligar, cards de ligação recebida e "Chamando…", mic e ensurdecer. Áudio Opus mono 48 kbps com DTX e RED, cancelamento de eco, supressão de ruído e ganho automático. Testes: 116. O aviso "Failed to start the connection" foi corrigido: o `stop` agora espera o `start` terminar.
+- Teste real: LiveKit no Docker recriado com o webhook (`docker compose up -d`), API local e Electron com microfone falso. Funcionaram entrar e sair da sala, a presença `in-call`, a ligação recebida (recusar, atender e desligar) e o "Chamando…" com o tempo de 30 s acabando. **Não testado:** duas pessoas se ouvindo de verdade, porque só havia um cliente real. Vale testar com dois apps no passo 7.
+- Dúvida nova: D3 (regras e telas de chamada), aberta e não bloqueante. Fiz a opção recomendada.
+- Parada pela regra 9 (5 tarefas nesta execução), com uso de 5 h em 50%. Próximo: passo 7 (câmera e grade de vídeos). O token do LiveKit hoje só libera `microphone` em `canPublishSources` (`server/api/Calls/LiveKitTokenService.cs`); acrescente `camera`.
+
 ## 20/11/2026 07:03–07:50 — sessão interativa rodando o roteiro da automação
 - A automação agendada não disparou às 07:01, então o usuário pediu para rodar o procedimento na sessão interativa.
 - Passo 3: commit `d4147be` e merge em `hml` (`a9bcce2`).
