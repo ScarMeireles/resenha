@@ -31,5 +31,6 @@
 }
 
 .avatar-presence--online { background: var(--green); }
+.avatar-presence--away { background: var(--yellow); }
 .avatar-presence--in-call { background: var(--orange); border-radius: 4px; width: 14px; height: 14px; right: -3px; bottom: -3px; }
 .avatar-presence--offline { background: var(--ring); border-color: var(--ring); box-shadow: inset 0 0 0 2px var(--text-faint); }

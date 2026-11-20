@@ -4,6 +4,24 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (status e chamada perdida, do R8)
+- Branch `feature/status-e-chamada-perdida`, mergeada em `hml`.
+- API:
+  - Cada conta guarda o status escolhido (`User.Status`: online, away ou offline) e há uma tabela nova `MissedCalls` (migração `StatusEChamadaPerdida`).
+  - O `PresenceTracker` calcula o que os outros veem. Quem escolhe "offline" fica invisível: aparece offline até em chamada, e ninguém é avisado quando essa pessoa conecta.
+  - Rotas novas: `GET`/`PUT /me/status` (fora do `UserDto` de propósito) e `GET`/`DELETE /calls/missed` (só mostra chamada de quem ainda é amigo, até 50).
+  - Ligar agora só depende de o app da pessoa estar aberto. Se estiver fechado: 409 "Fulano não está disponível" e uma chamada perdida registrada.
+  - A lista de amigos passou a ordenar como "não offline" primeiro (antes, quem estava em chamada ia para o fim).
+- App:
+  - Os três tipos de presença repetidos viraram um só (`lib/presence.ts`).
+  - Clicar no próprio avatar abre o menu Online/Ausente/Offline. Ausente usa a cor nova `--yellow #f5c04a`, que não está no mockup.
+  - O botão Ligar fica sempre habilitado.
+  - Card "Chamada(s) perdida(s)" com agrupamento por pessoa, ligar de volta e Fechar. Ligar de volta também fecha o aviso.
+- Testes: API 149, app 156; build OK. Teste real com dois Electron (@st_a7650/@st_b7650): os 6 itens passaram e nenhum erro apareceu no console.
+- Fica para depois:
+  - Uma ligação que toca 30 s sem resposta (app aberto) não vira chamada perdida.
+  - Trocar o status num aparelho não atualiza os outros aparelhos da mesma pessoa na hora.
+
 ## 20/11/2026 — sessão interativa (teste real do passo 9)
 - Teste com dois Electron numa ligação 1:1 (contas locais @q9_a2421/@q9_b2421, mídia falsa). Passaram: áudio nos dois sentidos, troca de microfone e saída durante a chamada, supressão de ruído liga/desliga, tela em Normal (camadas 720p e 1080p; quem assiste recebe 1080p com palco grande ou 720p na janela padrão, pelo `adaptiveStream`; antes eram 540p) e Economia (720p 15 fps). Nenhum erro no console.
 - Bug corrigido (`e5cdd14`): voltar a câmera para "Padrão do sistema" encerrava a faixa de vídeo, porque o LiveKit pedia o aparelho `default` como obrigatório (`exact`). Agora `deviceArgs` em `voice.ts` manda `default` sem `exact`. Testes do app: 151.

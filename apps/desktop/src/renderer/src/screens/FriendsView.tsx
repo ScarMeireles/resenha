@@ -3,6 +3,7 @@ import { Avatar } from '../components/Avatar'
 import { CheckIcon, ChatIcon, PhoneIcon, XIcon } from '../components/Icons'
 import { ApiError, mediaUrl, type User } from '../lib/api'
 import { isOnline, normalizeUsername, sortFriends, type FriendDto, type FriendRequestDto, type FriendsState } from '../lib/friends'
+import { presenceLabel } from '../lib/presence'
 import './FriendsView.css'
 
 type Tab = 'online' | 'all' | 'requests'
@@ -108,12 +109,12 @@ function FriendList({ friends, onlyOnline, onCall }: { friends: FriendDto[]; onl
                 <strong>{user.displayName}</strong> <span className="friends-handle">@{user.username}</span>
               </div>
               <span className={`friends-status friends-status--${presence}`}>
-                {presence === 'online' ? 'Online' : presence === 'in-call' ? 'Em chamada' : 'Offline'}
+                {presenceLabel[presence]}
               </span>
             </div>
             <button className="friends-action" aria-label="Mandar mensagem" title="Em breve" disabled><ChatIcon size={18} /></button>
-            <button className="friends-action" aria-label={`Ligar para ${user.displayName}`} disabled={presence === 'offline'}
-              title={presence === 'offline' ? `${user.displayName} está offline` : 'Ligar'} onClick={() => onCall(user)}>
+            {/* Liga mesmo para quem aparece offline: pode estar invisível. Se o app dele estiver fechado, fica uma chamada perdida. */}
+            <button className="friends-action" aria-label={`Ligar para ${user.displayName}`} title="Ligar" onClick={() => onCall(user)}>
               <PhoneIcon size={18} />
             </button>
           </li>

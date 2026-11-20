@@ -9,7 +9,7 @@ export const NOTICE_MS = 3_000
 const enc = encodeURIComponent
 
 export const callsApi = {
-  /** Liga para um amigo (409 "{Nome} está offline" se ele não estiver conectado). */
+  /** Liga para um amigo (409 "{Nome} não está disponível" se o app dele estiver fechado; ele recebe uma chamada perdida). */
   dial: (token: string, friendId: string) => request<VoiceCredentialsDto>('POST', `/calls/${enc(friendId)}`, { token }),
   accept: (token: string, friendId: string) => request<VoiceCredentialsDto>('POST', `/calls/${enc(friendId)}/accept`, { token }),
   decline: (token: string, friendId: string) => request<void>('POST', `/calls/${enc(friendId)}/decline`, { token }),

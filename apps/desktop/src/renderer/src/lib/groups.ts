@@ -1,10 +1,9 @@
 import { request, type User } from './api'
+import type { Presence } from './presence'
 
 /** Tipos, chamadas e estado de grupos e mensagens. Espelham server/api (GroupDto, MessageDto...). */
 
 export { initialsOf as initials } from './avatar'
-
-export type MemberPresence = 'online' | 'offline' | 'in-call'
 
 export const MAX_GROUP_MEMBERS = 10
 export const MAX_GROUP_NAME = 40
@@ -16,7 +15,7 @@ export const PAGE_SIZE = 50
 
 export interface GroupMemberDto {
   user: User
-  presence: MemberPresence
+  presence: Presence
   isOwner: boolean
 }
 
@@ -126,7 +125,7 @@ export type GroupsAction =
   | { type: 'added'; group: GroupDto }
   | { type: 'updated'; group: GroupDto }
   | { type: 'removed'; groupId: string }
-  | { type: 'presenceChanged'; userId: string; presence: MemberPresence }
+  | { type: 'presenceChanged'; userId: string; presence: Presence }
 
 const upsertGroup = (list: GroupDto[], group: GroupDto) =>
   list.some((g) => g.id === group.id) ? list.map((g) => (g.id === group.id ? group : g)) : [group, ...list]

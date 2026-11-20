@@ -1,12 +1,11 @@
 import { request, type User } from './api'
+import type { Presence } from './presence'
 
 /** Tipos e chamadas de amigos. Espelham server/api (FriendDto, FriendRequestDto). */
 
-export type FriendPresence = 'online' | 'offline' | 'in-call'
-
 export interface FriendDto {
   user: User
-  presence: FriendPresence
+  presence: Presence
   since: string
 }
 
@@ -58,7 +57,7 @@ export type FriendsAction =
   | { type: 'requestRemoved'; id: string }
   | { type: 'friendAdded'; friend: FriendDto }
   | { type: 'friendRemoved'; userId: string }
-  | { type: 'presenceChanged'; userId: string; presence: FriendPresence }
+  | { type: 'presenceChanged'; userId: string; presence: Presence }
 
 /** Insere ou troca pelo id, sem duplicar (o evento pode chegar junto com a resposta HTTP). */
 const upsertRequest = (list: FriendRequestDto[], item: FriendRequestDto) =>
@@ -99,7 +98,7 @@ export function friendsReducer(state: FriendsState, action: FriendsAction): Frie
 }
 
 /** Conectado (online ou em chamada), ou seja, não offline. */
-export const isOnline = (presence: FriendPresence): boolean => presence !== 'offline'
+export const isOnline = (presence: Presence): boolean => presence !== 'offline'
 
 /** Conectados primeiro; dentro de cada grupo, por nome (pt-BR). */
 export function sortFriends(friends: FriendDto[]): FriendDto[] {

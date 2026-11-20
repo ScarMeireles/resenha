@@ -4,6 +4,7 @@ import { CallCards } from '../components/CallCards'
 import { UserPanel } from '../components/UserPanel'
 import { CallContext, useCall } from '../hooks/useCall'
 import { useRealtime } from '../hooks/useRealtime'
+import { MyStatusContext, useMyStatus } from '../hooks/useMyStatus'
 import type { User } from '../lib/api'
 import { initials } from '../lib/groups'
 import { CallView } from './CallView'
@@ -31,6 +32,7 @@ export function Shell({ user, token, notice, onSignOut }: Props) {
   const [banner, setBanner] = useState(notice)
   const call = useCall(token)
   const data = useRealtime(token, call.events)
+  const myStatus = useMyStatus(token)
   const { friends, groups } = data
   const [openId, setOpenId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -80,6 +82,7 @@ export function Shell({ user, token, notice, onSignOut }: Props) {
 
   return (
     <CallContext.Provider value={{ ...call, label: callLabel }}>
+    <MyStatusContext.Provider value={myStatus}>
     <div className={`shell${group ? ' shell--group' : ''}`}>
       <nav className="rail" aria-label="Grupos">
         <div className="rail-item">
@@ -176,8 +179,11 @@ export function Shell({ user, token, notice, onSignOut }: Props) {
           }} />
       )}
 
-      <CallCards state={call.state} onAccept={() => void call.accept()} onDecline={call.decline} onCancel={call.leave} />
+      <CallCards state={call.state} onAccept={() => void call.accept()} onDecline={call.decline} onCancel={call.leave}
+        missedCalls={data.missedCalls} onDismissMissed={data.dismissMissedCalls}
+        onCallBack={(friend) => { data.dismissMissedCalls(); void call.dial(friend) }} />
     </div>
+    </MyStatusContext.Provider>
     </CallContext.Provider>
   )
 }

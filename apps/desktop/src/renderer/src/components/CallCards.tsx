@@ -1,6 +1,8 @@
-import { mediaUrl } from '../lib/api'
+import { mediaUrl, type User } from '../lib/api'
 import type { CallState } from '../lib/calls'
+import type { MissedCallDto } from '../lib/missedCalls'
 import { Avatar } from './Avatar'
+import { MissedCallsCard } from './MissedCallsCard'
 import './CallCards.css'
 
 interface Props {
@@ -8,14 +10,17 @@ interface Props {
   onAccept(): void
   onDecline(): void
   onCancel(): void
+  missedCalls: MissedCallDto[]
+  onCallBack(user: User): void
+  onDismissMissed(): void
 }
 
-/** Cards no canto inferior direito: ligação recebida, "Chamando…" e avisos curtos. */
-export function CallCards({ state, onAccept, onDecline, onCancel }: Props) {
+/** Cards no canto inferior direito: ligação recebida, "Chamando…", chamadas perdidas e avisos curtos. */
+export function CallCards({ state, onAccept, onDecline, onCancel, missedCalls, onCallBack, onDismissMissed }: Props) {
   const { incoming, current, notice } = state
   const calling = current?.status === 'ringing-out' && current.target.kind === 'direct' ? current.target.friend : null
 
-  if (!incoming && !calling && !notice) return null
+  if (!incoming && !calling && !notice && missedCalls.length === 0) return null
   return (
     <div className="call-cards">
       {incoming && (
@@ -41,6 +46,7 @@ export function CallCards({ state, onAccept, onDecline, onCancel }: Props) {
         </div>
       )}
 
+      <MissedCallsCard calls={missedCalls} onCallBack={onCallBack} onDismiss={onDismissMissed} />
       {notice && <div className="call-notice" role="status">{notice}</div>}
     </div>
   )
