@@ -11,6 +11,7 @@ using Resenha.Api.Accounts;
 using Resenha.Api.Auth;
 using Resenha.Api.Data;
 using Resenha.Api.Friends;
+using Resenha.Api.Groups;
 using Resenha.Api.Media;
 using Resenha.Api.Realtime;
 
@@ -34,6 +35,7 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, SubUserIdProvider>();
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddSingleton<FriendNotifier>();
+builder.Services.AddSingleton<GroupNotifier>();
 
 // --- Login: token JWT assinado com Jwt:SigningKey (segredo fora do Git)
 builder.Services.AddOptions<JwtOptions>()
@@ -88,6 +90,7 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 // --- Limite de tentativas em cadastro/login, por IP, contra quem tenta adivinhar senha
 var authPerMinute = builder.Configuration.GetValue("RateLimit:AuthPerMinute", 10);
 var friendRequestsPerMinute = builder.Configuration.GetValue("RateLimit:FriendRequestsPerMinute", 20);
+var messagesPerMinute = builder.Configuration.GetValue("RateLimit:MessagesPerMinute", 30);
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -102,6 +105,10 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy(FriendEndpoints.RequestRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
         FriendEndpoints.RateLimitKey(http),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = friendRequestsPerMinute, Window = TimeSpan.FromMinutes(1) }));
+    // Mensagens do chat: por usuário logado.
+    options.AddPolicy(GroupEndpoints.MessageRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
+        FriendEndpoints.RateLimitKey(http),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = messagesPerMinute, Window = TimeSpan.FromMinutes(1) }));
 });
 
 var app = builder.Build();
@@ -130,6 +137,7 @@ app.MapGet("/health", () => Results.Ok("ok"));
 app.MapAuthEndpoints();
 app.MapAccountEndpoints();
 app.MapFriendEndpoints();
+app.MapGroupEndpoints();
 app.MapHub<AppHub>("/hubs/app");
 
 app.Run();

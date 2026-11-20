@@ -50,6 +50,110 @@ namespace Resenha.Api.Data.Migrations
                     b.ToTable("Friendships");
                 });
 
+            modelBuilder.Entity("Resenha.Api.Data.Group", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("Groups");
+                });
+
+            modelBuilder.Entity("Resenha.Api.Data.GroupMember", b =>
+                {
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("JoinedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("GroupId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("GroupMembers");
+                });
+
+            modelBuilder.Entity("Resenha.Api.Data.Message", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("GroupId", "CreatedAt");
+
+                    b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("Resenha.Api.Data.MessageImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("File")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId");
+
+                    b.ToTable("MessageImages");
+                });
+
             modelBuilder.Entity("Resenha.Api.Data.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -109,6 +213,68 @@ namespace Resenha.Api.Data.Migrations
                     b.Navigation("Addressee");
 
                     b.Navigation("Requester");
+                });
+
+            modelBuilder.Entity("Resenha.Api.Data.Group", b =>
+                {
+                    b.HasOne("Resenha.Api.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Resenha.Api.Data.GroupMember", b =>
+                {
+                    b.HasOne("Resenha.Api.Data.Group", null)
+                        .WithMany("Members")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Resenha.Api.Data.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Resenha.Api.Data.Message", b =>
+                {
+                    b.HasOne("Resenha.Api.Data.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Resenha.Api.Data.Group", null)
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+                });
+
+            modelBuilder.Entity("Resenha.Api.Data.MessageImage", b =>
+                {
+                    b.HasOne("Resenha.Api.Data.Message", null)
+                        .WithMany("Images")
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Resenha.Api.Data.Group", b =>
+                {
+                    b.Navigation("Members");
+                });
+
+            modelBuilder.Entity("Resenha.Api.Data.Message", b =>
+                {
+                    b.Navigation("Images");
                 });
 #pragma warning restore 612, 618
         }

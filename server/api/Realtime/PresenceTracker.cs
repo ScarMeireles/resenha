@@ -42,6 +42,12 @@ public class PresenceTracker
         lock (_lock) return _connections.ContainsKey(userId);
     }
 
+    /// <summary>Conexões abertas da pessoa (uma por aparelho/aba).</summary>
+    public string[] ConnectionsOf(Guid userId)
+    {
+        lock (_lock) return _connections.TryGetValue(userId, out var set) ? [.. set] : [];
+    }
+
     public IReadOnlySet<Guid> OnlineUsers
     {
         get { lock (_lock) return _connections.Keys.ToHashSet(); }

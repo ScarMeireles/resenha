@@ -1,6 +1,6 @@
 namespace Resenha.Api.Media;
 
-/// <summary>Guarda as imagens no disco, em {raiz}/avatars e {raiz}/banners.</summary>
+/// <summary>Guarda as imagens no disco, em {raiz}/avatars, {raiz}/banners e {raiz}/chat.</summary>
 public class MediaStorage(string root)
 {
     public string Root { get; } = root;
