@@ -42,6 +42,14 @@ Status possíveis: `aberta` (ainda não bloqueia), `bloqueante` (trava um passo)
 - Enquanto isso: fiz a opção A. O mockup mostra "60 fps"; deixei 30 fps (60 fps em 1080p pesa na CPU de quem compartilha) e o ajuste fino vai para os presets do passo 9.
 - Resposta:
 
+### D5 — Tela de "Voz e vídeo" e presets de qualidade (passo 9)
+- Status: aberta
+- Passo: 9
+- Contexto: o mockup não tem tela de configurações de áudio/vídeo. O passo 9 pede escolha de microfone/fone, supressão de ruído e presets de bitrate, então precisei decidir onde ficam e quais presets existem.
+- Opções: A) item "Voz e vídeo" no menu da engrenagem do painel do usuário, abrindo uma janela com Microfone, Saída de som e Câmera (listas, com "Padrão do sistema"), caixinha "Supressão de ruído" (ligada por padrão) e Qualidade em 3 níveis: Economia (voz 32 kbps, câmera 360p, tela 720p 15 fps), Normal (voz 48 kbps, câmera 720p, tela 1080p 30 fps; padrão) e Alta (voz 64 kbps, câmera 1080p, tela 1080p 60 fps). Trocar aparelho e ruído vale na hora; trocar a qualidade vale na próxima vez que ligar câmera/tela ou entrar na chamada. Tudo salvo só neste computador (recomendado) · B) outra organização (diga qual).
+- Enquanto isso: fiz a opção A.
+- Resposta:
+
 _Respondidas no chat em 20/11/2026 ~06:10 (registradas abaixo em Resolvidas)._
 
 <!-- Modelo:
