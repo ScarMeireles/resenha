@@ -20,7 +20,7 @@ out/
 release/
 
 # Dados locais (uploads, logs)
-data/
+.data/
 logs/
 *.log
 
