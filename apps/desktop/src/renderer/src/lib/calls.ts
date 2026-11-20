@@ -57,6 +57,8 @@ export type CallAction =
   | { type: 'cancelled'; room: string }
   | { type: 'ended'; room: string }
   | { type: 'noticeCleared' }
+  /** Aviso avulso: não mexe na chamada em andamento. */
+  | { type: 'notice'; message: string }
 
 const nameOf = (call: CurrentCall) => (call.target.kind === 'direct' ? call.target.friend.displayName : '')
 
@@ -104,6 +106,8 @@ export function callReducer(state: CallState, action: CallAction): CallState {
       return current && isCurrentRoom(state, action.room) ? { ...state, current: null, notice: 'Chamada encerrada' } : state
     case 'noticeCleared':
       return { ...state, notice: null }
+    case 'notice':
+      return { ...state, notice: action.message }
   }
 }
 

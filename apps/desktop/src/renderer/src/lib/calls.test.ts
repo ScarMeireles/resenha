@@ -87,6 +87,12 @@ describe('chamada de grupo e encerramento', () => {
     expect(s.notice).toBe('Chamada encerrada')
   })
 
+  it('aviso avulso mantém a chamada e os demais dados', () => {
+    const before = run([{ type: 'groupJoining', groupId: 'g1' }])
+    const after = callReducer(before, { type: 'notice', message: 'x' })
+    expect(after).toEqual({ ...before, notice: 'x' })
+  })
+
   it('sair limpa a chamada e o aviso some', () => {
     expect(run([{ type: 'groupJoining', groupId: 'g1' }, { type: 'left' }]).current).toBeNull()
     expect(run([{ type: 'failed', message: 'x' }, { type: 'noticeCleared' }]).notice).toBeNull()
