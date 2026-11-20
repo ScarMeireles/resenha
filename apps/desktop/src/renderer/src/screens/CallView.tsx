@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Avatar } from '../components/Avatar'
-import { HeadphonesIcon, HeadphonesOffIcon, MicIcon, MicOffIcon, PhoneOffIcon } from '../components/Icons'
+import { HeadphonesIcon, HeadphonesOffIcon, MicIcon, MicOffIcon, PhoneOffIcon, VideoIcon, VideoOffIcon } from '../components/Icons'
 import { mediaUrl, type User } from '../lib/api'
+import { VideoTrackView } from '../components/VideoTrackView'
 import { formatDuration, type MicPrefs, type ParticipantView } from '../lib/voice'
 import './CallView.css'
 
@@ -13,6 +14,8 @@ interface Props {
   resolve(userId: string): User | undefined
   connectedAt: number | null
   prefs: MicPrefs
+  cameraOn: boolean
+  onToggleCamera(): void
   onToggleMic(): void
   onToggleDeafen(): void
   onLeave(): void
@@ -30,8 +33,8 @@ function useElapsedSeconds(since: number | null): number {
   return since === null ? 0 : (now - since) / 1000
 }
 
-/** Tela da chamada de voz: grade de participantes e barra de controles. Câmera e tela chegam nos passos 7 e 8. */
-export function CallView({ crumbs, connecting, participants, resolve, connectedAt, prefs, onToggleMic, onToggleDeafen, onLeave }: Props) {
+/** Tela da chamada de voz: grade de participantes e barra de controles. Câmera ligada mostra o vídeo no lugar do avatar; a tela compartilhada chega no passo 8. */
+export function CallView({ crumbs, connecting, participants, resolve, connectedAt, prefs, cameraOn, onToggleCamera, onToggleMic, onToggleDeafen, onLeave }: Props) {
   const elapsed = useElapsedSeconds(connectedAt)
   const count = participants.length
   const micOff = prefs.muted || prefs.deafened
@@ -59,7 +62,9 @@ export function CallView({ crumbs, connecting, participants, resolve, connectedA
           const name = p.isLocal ? 'Você' : user?.displayName ?? 'Alguém'
           return (
             <li key={p.id} className={`call-tile${p.isSpeaking ? ' call-tile--speaking' : ''}`}>
-              <Avatar name={user?.displayName ?? name} seed={p.id} src={mediaUrl(user?.avatarUrl ?? null)} size={64} />
+              {p.camera
+                ? <VideoTrackView track={p.camera} mirror={p.isLocal} />
+                : <Avatar name={user?.displayName ?? name} seed={p.id} src={mediaUrl(user?.avatarUrl ?? null)} size={64} />}
               <span className="call-tile-label">
                 {p.isMuted && <span className="call-tile-muted" role="img" aria-label="Microfone desligado"><MicOffIcon size={14} /></span>}
                 {name}{p.isSpeaking ? ' · falando' : ''}
@@ -73,6 +78,10 @@ export function CallView({ crumbs, connecting, participants, resolve, connectedA
         <button className={`call-btn${micOff ? ' call-btn--off' : ''}`} onClick={onToggleMic}
           aria-label={micOff ? 'Ligar microfone' : 'Desligar microfone'} aria-pressed={micOff}>
           {micOff ? <MicOffIcon size={22} /> : <MicIcon size={22} />}
+        </button>
+        <button className={`call-btn${cameraOn ? '' : ' call-btn--off'}`} onClick={onToggleCamera}
+          aria-label={cameraOn ? 'Desligar câmera' : 'Ligar câmera'} aria-pressed={!cameraOn}>
+          {cameraOn ? <VideoIcon size={22} /> : <VideoOffIcon size={22} />}
         </button>
         <button className={`call-btn${prefs.deafened ? ' call-btn--off' : ''}`} onClick={onToggleDeafen}
           aria-label={prefs.deafened ? 'Ligar som' : 'Desligar som'} aria-pressed={prefs.deafened}>
