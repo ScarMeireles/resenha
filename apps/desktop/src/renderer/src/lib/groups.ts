@@ -63,6 +63,18 @@ export function voiceReducer(state: VoiceState, action: { groupId: string; userI
   return { ...state, [action.groupId]: action.userIds }
 }
 
+/**
+ * Recarrega a sala de voz de cada grupo da lista (usado depois de reconectar o SignalR, quando eventos podem ter sido perdidos).
+ * Falha de rede em um grupo não atrapalha os outros: o próximo resync tenta de novo.
+ */
+export async function reloadVoice(
+  token: string, groupIds: Iterable<string>, apply: (groupId: string, userIds: string[]) => void,
+): Promise<void> {
+  await Promise.allSettled(
+    [...groupIds].map(async (groupId) => apply(groupId, (await groupsApi.getVoice(token, groupId)).userIds)),
+  )
+}
+
 const enc = encodeURIComponent
 
 export const groupsApi = {

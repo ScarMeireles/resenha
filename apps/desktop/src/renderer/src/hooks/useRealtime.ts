@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { emptyFriends, friendsApi, friendsReducer } from '../lib/friends'
-import { groupsApi, groupsReducer, messagesReducer, voiceReducer, type GroupDto, type MessagesState, type VoiceState } from '../lib/groups'
+import { groupsApi, groupsReducer, messagesReducer, reloadVoice, voiceReducer, type GroupDto, type MessagesState, type VoiceState } from '../lib/groups'
 import { createRealtime, type RealtimeHandlers } from '../lib/realtime'
 
 /** Eventos de chamada, tratados por useCall. */
@@ -25,6 +25,8 @@ export function useRealtime(token: string, callEvents: CallEvents) {
   // O resync precisa saber quais conversas já foram abertas, sem religar a conexão a cada mensagem.
   const openChats = useRef<string[]>([])
   openChats.current = Object.keys(messages)
+  // Grupos cuja sala de voz já foi carregada (a chave some do estado quando a sala esvazia, então guardamos à parte).
+  const voiceGroups = useRef(new Set<string>())
 
   useEffect(() => {
     let stopped = false
@@ -44,6 +46,7 @@ export function useRealtime(token: string, callEvents: CallEvents) {
           quiet,
         )
       }
+      void reloadVoice(token, voiceGroups.current, (groupId, userIds) => !stopped && dispatchVoice({ groupId, userIds }))
     }
 
     const realtime = createRealtime(token, {
@@ -188,6 +191,7 @@ export function useRealtime(token: string, callEvents: CallEvents) {
   /** Carrega quem está na sala de voz do grupo (ao abrir o grupo); depois os eventos mantêm atualizado. */
   const loadVoice = useCallback(
     async (groupId: string) => {
+      voiceGroups.current.add(groupId)
       const { userIds } = await groupsApi.getVoice(token, groupId)
       dispatchVoice({ groupId, userIds })
     },

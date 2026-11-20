@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { User } from './api'
 import {
-  dayLabel, formatTime, groupByDay, groupsApi, groupsReducer, initials, messagesReducer, validateAttachments, voiceReducer, PAGE_SIZE,
+  dayLabel, formatTime, groupByDay, groupsApi, groupsReducer, initials, messagesReducer, validateAttachments, voiceReducer, PAGE_SIZE, reloadVoice,
   type GroupDto, type MessageDto, type MessagesState,
 } from './groups'
 
@@ -232,5 +232,15 @@ describe('sala de voz do grupo', () => {
     expect(fetchMock.mock.calls[0][1].method).toBe('GET')
     expect(String(fetchMock.mock.calls[1][0])).toMatch(/\/groups\/g1\/voice\/token$/)
     expect(fetchMock.mock.calls[1][1].method).toBe('POST')
+  })
+
+  it('reloadVoice busca a sala de cada grupo e ignora o que falhar', async () => {
+    const fetchMock = vi.fn().mockImplementation(async (url: string) =>
+      String(url).includes('/g2/') ? new Response('{}', { status: 500 }) : new Response(JSON.stringify({ userIds: ['a'] }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const applied: [string, string[]][] = []
+    await reloadVoice('tok', new Set(['g1', 'g2', 'g3']), (groupId, userIds) => applied.push([groupId, userIds]))
+    vi.unstubAllGlobals()
+    expect(applied).toEqual([['g1', ['a']], ['g3', ['a']]])
   })
 })
