@@ -98,3 +98,58 @@
 
 .video-track { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 .video-track--mirror { transform: scaleX(-1); }
+
+/* Botão de tela ligado: destaque laranja (é um estado "ativo", não "desligado"). */
+.call-btn--active { background: var(--orange); color: var(--on-orange); }
+.call-btn--active:hover { background: var(--orange-hover); }
+
+/* Layout de palco: tela grande em cima, pessoas numa faixa rolável embaixo. */
+.call-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #111318;
+  border: 1px solid var(--border);
+}
+.call-stage .video-track { object-fit: contain; }
+.call-stage-label {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  max-width: calc(100% - 24px);
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(13, 15, 19, 0.82);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.call-strip {
+  flex: none;
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.call-strip .call-tile { flex: none; width: 180px; }
+.call-tile--screen { background: #181b21; }
+.call-tile-switch {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.call-tile-switch:hover { background: var(--bg-hover); }

@@ -12,6 +12,7 @@ import { FriendsView } from './FriendsView'
 import { CreateGroupModal } from './GroupModals'
 import { GroupSidebar } from './GroupSidebar'
 import { MembersPanel } from './MembersPanel'
+import { ScreenPicker } from '../components/ScreenPicker'
 import './Shell.css'
 import './Chat.css'
 
@@ -33,6 +34,7 @@ export function Shell({ user, token, notice, onSignOut }: Props) {
   const { friends, groups } = data
   const [openId, setOpenId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  const [pickingScreen, setPickingScreen] = useState(false)
   const addFriendInput = useRef<HTMLInputElement>(null)
   const pending = friends.incoming.length
   const group = groups.find((g) => g.id === openId)
@@ -58,11 +60,16 @@ export function Shell({ user, token, notice, onSignOut }: Props) {
 
   const callLabel = current ? (current.target.kind === 'direct' ? current.target.friend.displayName : callGroup?.name ?? null) : null
   const showCall = call.viewing && !!current && (current.status === 'active' || (current.target.kind === 'group' && current.status === 'connecting'))
+  // Se a chamada acabar com o seletor aberto, fecha o seletor.
+  useEffect(() => {
+    if (!current) setPickingScreen(false)
+  }, [current])
   const callScreen = showCall && current ? (
     <CallView crumbs={current.target.kind === 'direct' ? [current.target.friend.displayName] : [callLabel ?? 'Grupo', 'Sala de voz']}
       connecting={current.status === 'connecting'} participants={call.participants} resolve={resolveUser} connectedAt={call.connectedAt}
       prefs={call.prefs} onToggleMic={() => call.setMuted(!(call.prefs.muted || call.prefs.deafened))}
       cameraOn={call.cameraOn} onToggleCamera={() => call.setCamera(!call.cameraOn)}
+      screenSharing={call.screenSharing} onShareScreen={() => setPickingScreen(true)} onStopScreen={() => void call.stopScreenShare()}
       onToggleDeafen={() => call.setDeafened(!call.prefs.deafened)} onLeave={call.leave} />
   ) : null
 
@@ -157,6 +164,10 @@ export function Shell({ user, token, notice, onSignOut }: Props) {
         </>
       )}
 
+      {pickingScreen && (
+        <ScreenPicker onCancel={() => setPickingScreen(false)}
+          onConfirm={(id, audio) => { setPickingScreen(false); void call.startScreenShare(id, audio) }} />
+      )}
       {creating && (
         <CreateGroupModal friends={friends.friends} onClose={() => setCreating(false)}
           onCreate={async (name, memberIds) => {

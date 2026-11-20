@@ -16,6 +16,9 @@ export const PlusIcon = (p: P) => <Icon {...p}><path d="M12 5v14M5 12h14" /></Ic
 export const CameraIcon = (p: P) => (
   <Icon {...p}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" /><circle cx="12" cy="13" r="4" /></Icon>
 )
+export const ScreenShareIcon = (p: P) => (
+  <Icon {...p}><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></Icon>
+)
 export const VideoIcon = (p: P) => (
   <Icon {...p}><path d="M23 7l-7 5 7 5V7z" /><rect x="1" y="5" width="15" height="14" rx="2" /></Icon>
 )
