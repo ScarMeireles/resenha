@@ -117,7 +117,9 @@ export async function connectVoice(credentials: VoiceCredentials, initial: MicPr
   })
 
   const prefs: MicPrefs = { ...initial }
-  const elements = new Set<HTMLMediaElement>()
+  // Elemento de áudio de cada faixa remota, pelo objeto da faixa. Guardamos nós mesmos porque, quando quem publica
+  // para (ex.: fim do áudio da tela), o LiveKit já desanexou a faixa e o detach() volta vazio.
+  const elements = new Map<RemoteTrack, HTMLMediaElement>()
   let closing = false
 
   const emit = () => handlers.onChange(toParticipantViews([room.localParticipant, ...room.remoteParticipants.values()].map(toRaw)))
@@ -132,18 +134,18 @@ export async function connectVoice(credentials: VoiceCredentials, initial: MicPr
       el.style.display = 'none'
       el.muted = prefs.deafened
       document.body.appendChild(el)
-      elements.add(el)
+      elements.get(track)?.remove()
+      elements.set(track, el)
       emit()
     })
     .on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
-      for (const el of track.detach()) {
-        el.remove()
-        elements.delete(el)
-      }
+      track.detach()
+      elements.get(track)?.remove()
+      elements.delete(track)
       emit()
     })
     .on(RoomEvent.Disconnected, () => {
-      for (const el of elements) el.remove()
+      for (const el of elements.values()) el.remove()
       elements.clear()
       if (!closing) handlers.onDropped()
     })
@@ -168,7 +170,7 @@ export async function connectVoice(credentials: VoiceCredentials, initial: MicPr
     },
     async setDeafened(deafened) {
       prefs.deafened = deafened
-      for (const el of elements) el.muted = deafened
+      for (const el of elements.values()) el.muted = deafened
       await room.localParticipant.setMicrophoneEnabled(micEnabled(prefs))
       emit()
     },
