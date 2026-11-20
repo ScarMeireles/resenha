@@ -4,6 +4,15 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 09:14–09:35 — automação agendada (passo 7, câmera)
+- Passo 7 pronto e mergeado em `hml` (`28eebff`). Branch `feature/passo-7-camera`, commits `939cc9d` (token libera `camera`), `be0583a` (voice/hook), `2a22b71` (tela), `7e51812` (ajustes), `6985d4d` (CSP) e `7bb5a25` (README).
+- App: botão de câmera na barra (neutro quando desligada), vídeo no lugar do avatar (o seu espelhado), tiles 16:9 de 240 a 480 px centralizados. Captura em 720p 30 fps, VP8, simulcast 180p/360p, `adaptiveStream` e `dynacast`. Nova ação `notice` no `callReducer` mostra "Não foi possível ligar a câmera." sem derrubar a chamada. Ícones novos `VideoIcon`/`VideoOffIcon` (já existia um `CameraIcon` de foto). Testes: API 141, app 121.
+- Teste real com dois Electron (câmera e mic falsos, contas @teste_cam_a/@teste_cam_b, grupo "Grupo Cam"): os dois se veem (remoto 640x360 pela camada simulcast, próprio 1280x720 espelhado), e ao desligar a câmera o tile volta ao avatar. O navegador embutido não serve para isso: ele nega a câmera.
+- Bug achado e corrigido: no app empacotado a CSP só liberava HTTP da API, então o SignalR e o LiveKit eram bloqueados ("A conexão de voz caiu."). A política foi para `apps/desktop/src/build/csp.ts` (com teste). Nova variável `VITE_LIVEKIT_URL` (padrão `ws://localhost:7880`) no `.env.example`. **Não testado de novo no build empacotado**, mas a CSP gerada no `out/` foi conferida. No passo 10, o `VITE_LIVEKIT_URL` precisa apontar para o `wss://` da Oracle.
+- Sem dúvidas novas. Docker do LiveKit ficou rodando.
+- Parada pela regra 9 (5 tarefas), com uso de 5 h em 58%. Próximo: passo 8 (compartilhar tela com seletor de janela/monitor e áudio do sistema). Inclua `screen_share` e `screen_share_audio` em `canPublishSources` (`server/api/Calls/LiveKitTokenService.cs`). No Electron, o seletor usa `desktopCapturer` + `session.setDisplayMediaRequestHandler` no main (o áudio do sistema no Windows vem com `audio: 'loopback'`). O mockup `Chamada.dc.html` mostra a tela grande em cima, os tiles numa faixa embaixo e o rótulo "Tela de Ana · 1080p 60 fps · com áudio".
+
+
 ## 20/11/2026 08:14–08:45 — automação agendada (passo 6, voz)
 - Passo 6 pronto e mergeado em `hml` (`cab85ee`). Branch `feature/passo-6-voz`, commits `d9664ce`, `b36d564`, `311b20a` (API e infra), `6c121a8` (D3), `c68af82`, `deae947`, `bc3b17a`, `84c5a07` (app) e `239c1cb` (README).
 - API: token do LiveKit, voz do grupo (`/groups/{id}/voice`), ligação 1:1 (`/calls/{amigoId}` e accept/decline/cancel/hangup), webhook `POST /livekit/webhook` com assinatura conferida, presença `in-call`. Em dev a API lê as chaves do `infra/.env`. Testes: 141.
