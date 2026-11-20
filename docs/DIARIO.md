@@ -4,6 +4,15 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (dúvidas e verificação de segredos)
+- D1 a D5 respondidas no chat e movidas para "Resolvidas" (R6 a R10 em `docs/DUVIDAS.md`). Trabalho novo que saiu delas:
+  - Status clicável com Online, Ausente e Offline. "Offline" funciona como invisível.
+  - Ligar para quem aparece offline; se a pessoa estiver desconectada de verdade, ela recebe aviso de chamada perdida quando entrar.
+  - Áudio da tela com três opções: sem áudio, todo o áudio do PC, ou todo menos uma lista de apps (o Resenha vem marcado). Isso exige módulo nativo e precisa ser validado antes.
+- Foco definido pelo usuário: ligar e compartilhar tela funcionando. Segurança mínima: não vazar senhas nem IPs. O repositório público tem só o código.
+- Nova verificação automática: `scripts/check-secrets.mjs` com hooks `.githooks/pre-commit` (arquivos no stage) e `.githooks/pre-push` (todos os arquivos e o histórico). Ativada nesta máquina com `git config core.hooksPath .githooks`. Bloqueia `.env`, `appsettings.Development.json`, banco, `.data/`, chaves, IP público e o valor real dos segredos de `infra/.env` e `appsettings.Development.json`. Rodada em todo o código e no histórico: limpos. Teste com segredo, IP e `.db` falsos: bloqueou os três.
+- Regras novas no `CLAUDE.md` (repositório público e privacidade) e seção "Clonou o projeto?" no README.
+
 ## 20/11/2026 11:14–11:30 — automação agendada (passo 9, qualidade)
 - Passo 9 pronto e mergeado em `hml` (`ac1e7c3`). Branch `feature/passo-9-qualidade`, commits `cfdd953` (D5), `fea0a2f` (preferências de mídia e lista de aparelhos, com testes), `2ebac24` (voz e `useCall`), `335db9f` (tela "Voz e vídeo") e `3c23bc8` (README).
 - App: `lib/mediaSettings.ts` com 3 níveis de qualidade (Economia: voz 32 kbps, câmera 360p, tela 720p 15 fps · Normal, o padrão: voz 48 kbps, câmera 720p, tela 1080p 30 fps · Alta: voz 64 kbps, câmera 1080p, tela 1080p 60 fps a 8 Mbps). Todos em VP8, com camadas de simulcast também na tela (720p), o que deve evitar os 540p vistos no passo 8. Escolha de microfone, saída de som e câmera (`switchActiveDevice`) e supressão de ruído (`restartTrack`) valem na hora. A qualidade vale na próxima vez que a câmera ou a tela forem ligadas. Tudo fica salvo no `localStorage` (`resenha.mediaSettings`). A tela abre pelo item "Voz e vídeo" no menu da engrenagem do painel do usuário.

@@ -6,6 +6,8 @@ App desktop de voz, câmera, compartilhamento de tela e chat entre amigos. Visã
 - Stack: Electron + React + TypeScript (`apps/desktop`), ASP.NET Core Minimal API + SignalR + EF Core/SQLite (`server/api`), LiveKit via Docker (`infra`).
 - Contas simples (@ único, nome, foto, senha curta, sem e-mail). Senha sempre com hash. Segurança proporcional a um app entre amigos.
 - **Segredos (API key/secret do LiveKit, chave de assinatura de JWT) nunca vão para o Git**: use `.env`/`appsettings.Development.json` ignorados e mantenha um `*.example` versionado.
+- **Repositório público, só código:** quem clonar hospeda o próprio servidor, banco e chaves. Nunca versionar banco, uploads (`.data/`), `.env`, chaves, IPs públicos (o da VM da Oracle vai no `.env`) ou dado pessoal do usuário. A verificação automática é `scripts/check-secrets.mjs` (hooks em `.githooks/`, ativados com `git config core.hooksPath .githooks`): se bloquear, corrija a causa e não use `--no-verify`.
+- **Privacidade dos usuários:** senha nunca aparece em log, resposta da API nem mensagem de erro. O IP de um usuário não é exposto para outro: a mídia passa pelo LiveKit (o app não conecta direto no IP do amigo) e a API não devolve IPs.
 - Visual segue os mockups aprovados (link no README). Paleta: grafite `#111318`/`#181B21`/`#1F232A`, laranja `#FF8A3D`, verde de fala `#3DDC97`; fontes Inter e Space Grotesk.
 - Sem CI do GitHub por enquanto: builds e testes rodam localmente.
 - Branches: `main` (produção) e `hml` (homologação). Todo trabalho sai de uma branch criada a partir de `hml` (ex.: `feature/passo-2-api-base`), volta para `hml` e só depois `hml` vai para `main`.

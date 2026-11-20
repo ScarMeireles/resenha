@@ -1,0 +1,4 @@
+#!/bin/sh
+# Antes de qualquer push, confere todos os arquivos versionados e o histórico inteiro.
+root="$(git rev-parse --show-toplevel)"
+node "$root/scripts/check-secrets.mjs" --all && exec node "$root/scripts/check-secrets.mjs" --history
