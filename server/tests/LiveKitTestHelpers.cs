@@ -83,7 +83,7 @@ public static class LiveKitTestHelpers
         await connection.StartAsync();
         var presence = factory.Services.GetRequiredService<PresenceTracker>();
         var deadline = DateTime.UtcNow + Timeout;
-        while (!presence.IsOnline(userId))
+        while (!presence.IsConnected(userId))
         {
             if (DateTime.UtcNow > deadline) throw new TimeoutException("O servidor não registrou a conexão.");
             await Task.Delay(10);

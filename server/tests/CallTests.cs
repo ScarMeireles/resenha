@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Resenha.Api.Accounts;
 using Resenha.Api.Calls;
+using Resenha.Api.Realtime;
 using static Resenha.Api.Tests.GroupTestHelpers;
 using static Resenha.Api.Tests.LiveKitTestHelpers;
 
@@ -35,15 +36,63 @@ public class CallTests(ApiFactory factory) : IClassFixture<ApiFactory>, IAsyncLi
     }
 
     [Fact]
-    public async Task Ligar_para_amigo_offline_da_409()
+    public async Task Ligar_para_amigo_desconectado_da_409_e_deixa_chamada_perdida()
     {
-        var (a, _) = await factory.CreateLoggedUserAsync();
-        var (_, friend) = await FriendOf(factory, a);
+        var (a, authA) = await factory.CreateLoggedUserAsync();
+        var (friend, authFriend) = await FriendOf(factory, a);
 
-        var response = await a.PostAsync($"/calls/{friend.User.Id}", null);
+        var response = await a.PostAsync($"/calls/{authFriend.User.Id}", null);
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-        Assert.Equal($"{friend.User.DisplayName} está offline", await Title(response));
+        Assert.Equal($"{authFriend.User.DisplayName} não está disponível", await Title(response));
+        var missed = (await friend.GetFromJsonAsync<MissedCallDto[]>("/calls/missed"))!;
+        var only = Assert.Single(missed);
+        Assert.Equal(authA.User.Id, only.Caller.Id);
+        Assert.Empty((await a.GetFromJsonAsync<MissedCallDto[]>("/calls/missed"))!); // quem ligou não tem nada perdido
+    }
+
+    [Fact]
+    public async Task Fechar_o_aviso_apaga_as_chamadas_perdidas()
+    {
+        var (a, _) = await factory.CreateLoggedUserAsync();
+        var (friend, authFriend) = await FriendOf(factory, a);
+        await a.PostAsync($"/calls/{authFriend.User.Id}", null);
+        await a.PostAsync($"/calls/{authFriend.User.Id}", null);
+        Assert.Equal(2, (await friend.GetFromJsonAsync<MissedCallDto[]>("/calls/missed"))!.Length);
+
+        var clear = await friend.DeleteAsync("/calls/missed");
+
+        Assert.Equal(HttpStatusCode.NoContent, clear.StatusCode);
+        Assert.Empty((await friend.GetFromJsonAsync<MissedCallDto[]>("/calls/missed"))!);
+    }
+
+    [Fact]
+    public async Task Chamada_perdida_de_quem_deixou_de_ser_amigo_nao_aparece()
+    {
+        var (a, authA) = await factory.CreateLoggedUserAsync();
+        var (friend, authFriend) = await FriendOf(factory, a);
+        await a.PostAsync($"/calls/{authFriend.User.Id}", null);
+
+        (await friend.DeleteAsync($"/friends/{authA.User.Id}")).EnsureSuccessStatusCode();
+
+        Assert.Empty((await friend.GetFromJsonAsync<MissedCallDto[]>("/calls/missed"))!);
+    }
+
+    [Fact]
+    public async Task Ligacao_para_amigo_invisivel_toca_normalmente()
+    {
+        var (a, _) = await factory.CreateLoggedUserAsync();
+        var (b, authB) = await FriendOf(factory, a);
+        (await b.PutAsJsonAsync("/me/status", new StatusDto("offline"))).EnsureSuccessStatusCode();
+        var connB = Connect(factory, authB.Token, _connections);
+        var incoming = Expect<Incoming>(connB, "callIncoming");
+        await StartAndWait(factory, connB, authB.User.Id);
+
+        var call = await a.PostAsync($"/calls/{authB.User.Id}", null);
+
+        call.EnsureSuccessStatusCode();
+        await incoming;
+        Assert.Empty((await b.GetFromJsonAsync<MissedCallDto[]>("/calls/missed"))!);
     }
 
     [Fact]

@@ -24,5 +24,11 @@ public class User
     /// <summary>Nome do arquivo WebP em media/banners, ou null sem banner.</summary>
     public string? BannerFile { get; set; }
 
+    /// <summary>
+    /// Status escolhido pela pessoa: "online", "away" (Ausente) ou "offline" (invisível: aparece offline,
+    /// mas o app continua conectado e recebe ligações). Só ela vê este valor; os outros veem a presença calculada.
+    /// </summary>
+    public string Status { get; set; } = UserStatuses.Online;
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

@@ -6,6 +6,9 @@ using Resenha.Api.Realtime;
 
 namespace Resenha.Api.Calls;
 
+/// <summary>Uma ligação que não tocou porque a pessoa estava com o app fechado.</summary>
+public record MissedCallDto(UserDto Caller, DateTimeOffset At);
+
 public static class CallEndpoints
 {
     public const string CallRateLimitPolicy = "calls";
@@ -19,19 +22,52 @@ public static class CallEndpoints
         calls.MapPost("/decline", Decline);
         calls.MapPost("/cancel", Cancel);
         calls.MapPost("/hangup", Hangup);
+
+        var missed = app.MapGroup("/calls/missed").WithTags("Ligações").RequireAuthorization();
+        missed.MapGet("/", GetMissed);
+        missed.MapDelete("/", ClearMissed);
     }
+
+    /// <summary>Chamadas perdidas de quem ainda é amigo, da mais recente para a mais antiga.</summary>
+    private static async Task<IResult> GetMissed(HttpContext http, AppDbContext db)
+    {
+        var me = http.User.GetUserId();
+        var rows = await db.MissedCalls.Include(m => m.Caller)
+            .Where(m => m.CalleeId == me && db.Friendships.Any(f => f.Status == FriendshipStatus.Accepted
+                && ((f.RequesterId == me && f.AddresseeId == m.CallerId) || (f.RequesterId == m.CallerId && f.AddresseeId == me))))
+            .OrderByDescending(m => m.CreatedAt)
+            .Take(MissedCallsLimit)
+            .ToListAsync();
+        return Results.Ok(rows.Select(m => new MissedCallDto(UserDto.From(m.Caller), m.CreatedAt)).ToArray());
+    }
+
+    /// <summary>A pessoa fechou o aviso: apaga todas as chamadas perdidas dela.</summary>
+    private static async Task<IResult> ClearMissed(HttpContext http, AppDbContext db)
+    {
+        var me = http.User.GetUserId();
+        await db.MissedCalls.Where(m => m.CalleeId == me).ExecuteDeleteAsync();
+        return Results.NoContent();
+    }
+
+    public const int MissedCallsLimit = 50;
 
     private static async Task<IResult> Ring(
         Guid friendId, HttpContext http, AppDbContext db, PresenceTracker presence,
-        CallTracker calls, CallNotifier notifier, LiveKitTokenService tokens)
+        CallTracker calls, CallNotifier notifier, LiveKitTokenService tokens, TimeProvider clock)
     {
         var me = http.User.GetUserId();
         var users = await FriendPair(db, me, friendId);
         if (users is null) return NotFriends();
         var (self, friend) = users.Value;
 
-        if (!presence.IsOnline(friendId))
-            return Results.Problem(statusCode: StatusCodes.Status409Conflict, title: $"{friend.DisplayName} está offline");
+        // Quem está invisível ("offline" escolhido) continua conectado e a ligação toca normalmente.
+        // Só quem está desconectada de verdade não recebe: fica uma chamada perdida para ela ver ao entrar.
+        if (!presence.IsConnected(friendId))
+        {
+            db.MissedCalls.Add(new MissedCall { CallerId = me, CalleeId = friendId, CreatedAt = clock.GetUtcNow() });
+            await db.SaveChangesAsync();
+            return Results.Problem(statusCode: StatusCodes.Status409Conflict, title: $"{friend.DisplayName} não está disponível");
+        }
 
         // Se o amigo já estava chamando a gente (ligações cruzadas), NÃO tratamos como "atender": a chamada dele
         // é sobrescrita pela nossa, e ele recebe o callIncoming normalmente. Decisão de produto fica para depois.
