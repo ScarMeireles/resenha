@@ -10,7 +10,13 @@ Status possíveis: `aberta` (ainda não bloqueia), `bloqueante` (trava um passo)
 
 ## Abertas
 
-_(nenhuma)_
+### D1 — Pedidos enviados e desfazer amizade (fora do mockup)
+- Status: aberta
+- Passo: 4
+- Contexto: o mockup de Amigos mostra só pedidos recebidos. Não mostra pedidos que você enviou nem como desfazer uma amizade.
+- Opções: A) na aba "Pedidos", uma seção "PEDIDOS ENVIADOS — N" com botão "Cancelar pedido", no mesmo estilo dos recebidos; desfazer amizade fica para depois, num menu "⋯" na linha do amigo (recomendado) · B) não mostrar pedidos enviados.
+- Enquanto isso: fiz a opção A. A API já tem `DELETE /friends/{userId}`, mas ainda não existe botão para desfazer amizade.
+- Resposta:
 
 _Respondidas no chat em 20/11/2026 ~06:10 (registradas abaixo em Resolvidas)._
 
