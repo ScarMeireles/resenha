@@ -64,6 +64,12 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
     });
 builder.Services.AddAuthorization();
 
+// --- CORS: o app desktop chama a API de outra "origem" (localhost:5173 no dev, file:// no instalado).
+// Qualquer origem pode chamar, mas SEM cookies: o login vai no cabeçalho Authorization, que o navegador
+// nunca envia sozinho. Então um site qualquer não consegue agir em nome de ninguém.
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
+    policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+
 // --- Limite de tentativas em cadastro/login, por IP, contra quem tenta adivinhar senha
 var authPerMinute = builder.Configuration.GetValue("RateLimit:AuthPerMinute", 10);
 builder.Services.AddRateLimiter(options =>
@@ -91,6 +97,7 @@ app.UseStaticFiles(new StaticFileOptions
     OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable",
 });
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();

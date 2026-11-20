@@ -1,0 +1,9 @@
+{
+  "usernameMinLength": 3,
+  "usernameMaxLength": 20,
+  "usernamePattern": "^[a-z0-9_.]+$",
+  "displayNameMaxLength": 32,
+  "passwordMinLength": 6,
+  "passwordMaxLength": 15,
+  "maxImageBytes": 10485760
+}
