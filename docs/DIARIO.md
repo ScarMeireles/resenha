@@ -4,6 +4,13 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 11:14–11:30 — automação agendada (passo 9, qualidade)
+- Passo 9 pronto e mergeado em `hml` (`ac1e7c3`). Branch `feature/passo-9-qualidade`, commits `cfdd953` (D5), `fea0a2f` (preferências de mídia e lista de aparelhos, com testes), `2ebac24` (voz e `useCall`), `335db9f` (tela "Voz e vídeo") e `3c23bc8` (README).
+- App: `lib/mediaSettings.ts` com 3 níveis de qualidade (Economia: voz 32 kbps, câmera 360p, tela 720p 15 fps · Normal, o padrão: voz 48 kbps, câmera 720p, tela 1080p 30 fps · Alta: voz 64 kbps, câmera 1080p, tela 1080p 60 fps a 8 Mbps). Todos em VP8, com camadas de simulcast também na tela (720p), o que deve evitar os 540p vistos no passo 8. Escolha de microfone, saída de som e câmera (`switchActiveDevice`) e supressão de ruído (`restartTrack`) valem na hora. A qualidade vale na próxima vez que a câmera ou a tela forem ligadas. Tudo fica salvo no `localStorage` (`resenha.mediaSettings`). A tela abre pelo item "Voz e vídeo" no menu da engrenagem do painel do usuário.
+- Testes: app 149, API 141; build OK. **Não testado com dois apps reais:** a troca de aparelho durante a chamada, os 60 fps e a camada de 720p da tela. O `applySettings` não tem teste unitário (exigiria mockar o `Room`), e a tela não tem teste de componente porque o projeto não tem Testing Library.
+- Dúvida nova: D5 (tela de voz e vídeo e presets), aberta e não bloqueante. Fiz a opção recomendada.
+- Parada pelo fim da janela da automação (~12:00), com uso de 5 h em 74%. Próximo: teste real do passo 9 com dois Electron. Depois vem o passo 10 (hospedagem na Oracle), que exige conta e chaves e por isso depende do usuário.
+
 ## 20/11/2026 10:14–10:30 — automação agendada (passo 8, compartilhar tela)
 - Passo 8 pronto e mergeado em `hml` (`c24eadc`). Branch `feature/passo-8-tela`, commits `1b58da4` (token libera `screen_share`/`screen_share_audio`), `bdbe0d3` (main/preload/voz/hook), `c5b7089` (D4), `da7d7fd` (seletor e palco), `ac5aefa` (correção) e `0c69614` (README).
 - Electron: `src/main/screen.ts` lista telas/janelas (sem a do Resenha) e entrega a escolhida pelo `setDisplayMediaRequestHandler`; escolha de uso único com validade de 15 s (`screenChoice.ts`, com teste). Áudio do sistema com `loopback`. App: seletor `ScreenPicker` (abas Telas/Janelas), palco com a tela grande e faixa de tiles, rótulo "Tela de X · 1080p · com áudio", botão laranja quando ativo. Mídia: 1080p 30 fps VP8, `ScreenSharePresets.h1080fps30`, `contentHint: 'motion'`. Testes: API 141, app 136; build OK.
