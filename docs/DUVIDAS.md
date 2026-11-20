@@ -10,47 +10,7 @@ Status possíveis: `aberta` (ainda não bloqueia), `bloqueante` (trava um passo)
 
 ## Abertas
 
-### D1 — Pedidos enviados e desfazer amizade (fora do mockup)
-- Status: aberta
-- Passo: 4
-- Contexto: o mockup de Amigos mostra só pedidos recebidos. Não mostra pedidos que você enviou nem como desfazer uma amizade.
-- Opções: A) na aba "Pedidos", uma seção "PEDIDOS ENVIADOS — N" com botão "Cancelar pedido", no mesmo estilo dos recebidos; desfazer amizade fica para depois, num menu "⋯" na linha do amigo (recomendado) · B) não mostrar pedidos enviados.
-- Enquanto isso: fiz a opção A. A API já tem `DELETE /friends/{userId}`, mas ainda não existe botão para desfazer amizade.
-- Resposta:
-
-### D2 — Telas de grupo fora do mockup (passo 5)
-- Status: aberta
-- Passo: 5
-- Contexto: o mockup não tem as janelas de "Criar grupo", "Adicionar pessoas" e "Renomear grupo", nem o jeito de remover alguém ou de apagar uma mensagem. Também não tem aviso de mensagens não lidas nos grupos.
-- Opções: A) janelas simples no visual do app (campo de nome + lista de amigos com caixinhas), com os botões de remover membro e apagar mensagem aparecendo ao passar o mouse e confirmação antes; não lidas ficam para depois (recomendado) · B) desenhar essas telas no mockup antes.
-- Enquanto isso: fiz a opção A. Dá para ajustar o visual depois.
-- Resposta:
-
-### D3 — Regras e telas de chamada fora do pedido (passo 6)
-- Status: aberta
-- Passo: 6
-- Contexto: o roteiro não define o que acontece em alguns casos de chamada, e o mockup não tem a tela de "chamando" (quem liga) nem uma tela própria da ligação 1:1.
-- Opções: A) ligar só para amigo online (offline dá aviso "está offline"); toca por 30 s e depois cancela sozinho; ligar para quem já está em chamada toca mesmo assim; entrar numa sala sai da anterior (uma chamada por vez); a ligação 1:1 usa a mesma tela da sala de voz, com o nome do amigo no topo; quem liga vê um card "Chamando Fulano…" com botão "Cancelar", no mesmo estilo do card de ligação recebida (recomendado) · B) outras regras (diga quais).
-- Enquanto isso: fiz a opção A.
-- Resposta:
-
-### D4 — Seletor de tela, áudio do computador e várias telas ao mesmo tempo (passo 8)
-- Status: aberta
-- Passo: 8
-- Contexto: o mockup mostra a tela compartilhada, mas não a janela de escolher tela/janela, nem o que acontece se duas pessoas compartilharem juntas. E o áudio do sistema no Windows (`loopback`) pega **todo** o som do computador, inclusive as vozes da chamada: quem compartilha com áudio sem fone faz os amigos ouvirem a si mesmos com atraso. Separar só o som de um programa exige módulo nativo (fica para depois).
-- Opções: A) janela "Compartilhar tela" com abas Telas/Janelas e miniaturas; caixinha "Compartilhar o áudio do computador" **desmarcada por padrão**, com aviso para usar fone; 1080p 30 fps; se várias pessoas compartilham, uma fica grande e as outras viram miniaturas "Tela de X" na faixa de baixo, clicáveis (recomendado) · B) áudio marcado por padrão, como o rótulo "com áudio" do mockup sugere · C) só uma pessoa compartilha por vez.
-- Enquanto isso: fiz a opção A. O mockup mostra "60 fps"; deixei 30 fps (60 fps em 1080p pesa na CPU de quem compartilha) e o ajuste fino vai para os presets do passo 9.
-- Resposta:
-
-### D5 — Tela de "Voz e vídeo" e presets de qualidade (passo 9)
-- Status: aberta
-- Passo: 9
-- Contexto: o mockup não tem tela de configurações de áudio/vídeo. O passo 9 pede escolha de microfone/fone, supressão de ruído e presets de bitrate, então precisei decidir onde ficam e quais presets existem.
-- Opções: A) item "Voz e vídeo" no menu da engrenagem do painel do usuário, abrindo uma janela com Microfone, Saída de som e Câmera (listas, com "Padrão do sistema"), caixinha "Supressão de ruído" (ligada por padrão) e Qualidade em 3 níveis: Economia (voz 32 kbps, câmera 360p, tela 720p 15 fps), Normal (voz 48 kbps, câmera 720p, tela 1080p 30 fps; padrão) e Alta (voz 64 kbps, câmera 1080p, tela 1080p 60 fps). Trocar aparelho e ruído vale na hora; trocar a qualidade vale na próxima vez que ligar câmera/tela ou entrar na chamada. Tudo salvo só neste computador (recomendado) · B) outra organização (diga qual).
-- Enquanto isso: fiz a opção A.
-- Resposta:
-
-_Respondidas no chat em 20/11/2026 ~06:10 (registradas abaixo em Resolvidas)._
+_Nenhuma no momento. D1 a D5 foram respondidas no chat em 20/11/2026 (registradas abaixo em Resolvidas, como R6 a R10)._
 
 <!-- Modelo:
 ### D1 — Título curto
@@ -63,6 +23,30 @@ _Respondidas no chat em 20/11/2026 ~06:10 (registradas abaixo em Resolvidas)._
 -->
 
 ## Resolvidas
+
+### R6 — Pedidos enviados e desfazer amizade (era D1, passo 4)
+- Respondido no chat em 20/11/2026: opção A aprovada, como já está (seção "PEDIDOS ENVIADOS — N" com "Cancelar pedido"; desfazer amizade depois, num menu "⋯").
+
+### R7 — Telas de grupo fora do mockup (era D2, passo 5)
+- Respondido no chat em 20/11/2026: opção A aprovada, como já está. Não lidas ficam para depois.
+
+### R8 — Regras de chamada e status (era D3, passo 6)
+- Respondido no chat em 20/11/2026:
+  - Pode ligar para amigo que aparece offline. O status "offline" escolhido pela pessoa funciona como invisível: se ela está com o app aberto, toca normalmente. Se está desconectada de verdade, quem liga vê "Fulano não está disponível" e a pessoa recebe um aviso de **chamada perdida** quando entrar.
+  - Clicar no próprio status permite escolher **Online, Ausente ou Offline**.
+  - O resto da opção A vale: toca 30 s e cancela; toca mesmo se o amigo já está em chamada; uma chamada por vez; 1:1 usa a tela da sala de voz; card "Chamando Fulano…" com Cancelar.
+  - **Foco agora:** conseguir ligar e compartilhar tela. Ajustes de regra ficam para depois.
+  - **Segurança mínima:** não vazar senhas nem IPs dos usuários (o app vai rodar junto com outros programas).
+  - **Repositório público no GitHub só com o código:** nada de segredos, banco ou dados pessoais. Quem clonar precisa hospedar e criar o próprio banco e as próprias chaves.
+
+### R9 — Compartilhamento de tela e áudio (era D4, passo 8)
+- Respondido no chat em 20/11/2026:
+  - Cada pessoa pode compartilhar uma tela ao mesmo tempo (layout da opção A: uma grande, as outras em miniatura).
+  - Áudio da tela com três opções: **Sem áudio**, **Todo o áudio do PC** e **Todo o áudio, menos: [lista de apps]**. O próprio Resenha vem marcado para sair (evita eco); dá para marcar o Discord e outros.
+  - Exige módulo nativo do Windows (API de captura por processo, Windows 10 2004+, gratuita). Atenção técnica: essa API exclui só um processo por captura, então excluir vários apps provavelmente precisa capturar os demais apps um a um e misturar o som; validar antes de implementar.
+
+### R10 — Tela "Voz e vídeo" e presets (era D5, passo 9)
+- Respondido no chat em 20/11/2026: opção A aprovada, como já está.
 
 ### R5 — Regras de grupos e chat (passo 5)
 - Respondido no chat em 20/11/2026: qualquer membro adiciona pessoas, mas só os próprios amigos. Só o dono renomeia e remove pessoas. Se o dono sair, o membro mais antigo vira dono; se sair o último, o grupo é apagado. Máximo de 10 pessoas. Até 4 imagens por mensagem. A pessoa pode apagar a própria mensagem, que vira "mensagem apagada"; editar fica para depois. Constantes em `server/api/Groups/GroupRules.cs`.

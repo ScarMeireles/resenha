@@ -104,6 +104,21 @@ resenha/
 
 Node 22, .NET 10 SDK, Docker, Git.
 
+## Clonou o projeto?
+
+Este repositório tem só o código. Não vem banco, chave, segredo nem dado de ninguém. Você hospeda o seu próprio servidor:
+gere o seu `infra/.env` (`infra/new-env.ps1`) e o seu `server/api/appsettings.Development.json` (a partir do `.example`).
+O banco SQLite é criado vazio na primeira execução da API.
+
+Ative a verificação de segredos (uma vez por clone):
+
+```powershell
+git config core.hooksPath .githooks
+```
+
+Ela roda `scripts/check-secrets.mjs` antes de cada commit e, antes de cada push, também confere o histórico inteiro.
+O commit é bloqueado se aparecer `.env`, banco, chave privada, IP público ou o valor real de algum segredo local.
+
 ## Rodando o LiveKit local
 
 ```powershell
