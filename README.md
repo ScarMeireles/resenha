@@ -96,7 +96,7 @@ resenha/
 - [x] **Passo 6 — Voz** na sala do grupo e ligação 1:1.
 - [x] **Passo 7 — Câmera** e grade de vídeos.
 - [x] **Passo 8 — Compartilhar tela** com seletor de janela/monitor e áudio do sistema.
-- [ ] **Passo 9 — Qualidade:** presets de bitrate, simulcast, supressão de ruído, seleção de microfone/fone.
+- [x] **Passo 9 — Qualidade:** presets de bitrate, simulcast, supressão de ruído, seleção de microfone/fone.
 - [ ] **Passo 10 — Hospedagem real** na Oracle e teste com um amigo pela internet.
 - [ ] **Passo 11 — Instalador** `.exe` com electron-builder, publicado em Releases do GitHub (build local, sem CI).
 
