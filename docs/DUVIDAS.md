@@ -18,6 +18,14 @@ Status possíveis: `aberta` (ainda não bloqueia), `bloqueante` (trava um passo)
 - Enquanto isso: fiz a opção A. A API já tem `DELETE /friends/{userId}`, mas ainda não existe botão para desfazer amizade.
 - Resposta:
 
+### D2 — Telas de grupo fora do mockup (passo 5)
+- Status: aberta
+- Passo: 5
+- Contexto: o mockup não tem as janelas de "Criar grupo", "Adicionar pessoas" e "Renomear grupo", nem o jeito de remover alguém ou de apagar uma mensagem. Também não tem aviso de mensagens não lidas nos grupos.
+- Opções: A) janelas simples no visual do app (campo de nome + lista de amigos com caixinhas), com os botões de remover membro e apagar mensagem aparecendo ao passar o mouse e confirmação antes; não lidas ficam para depois (recomendado) · B) desenhar essas telas no mockup antes.
+- Enquanto isso: fiz a opção A. Dá para ajustar o visual depois.
+- Resposta:
+
 _Respondidas no chat em 20/11/2026 ~06:10 (registradas abaixo em Resolvidas)._
 
 <!-- Modelo:
@@ -31,6 +39,9 @@ _Respondidas no chat em 20/11/2026 ~06:10 (registradas abaixo em Resolvidas)._
 -->
 
 ## Resolvidas
+
+### R5 — Regras de grupos e chat (passo 5)
+- Respondido no chat em 20/11/2026: qualquer membro adiciona pessoas, mas só os próprios amigos. Só o dono renomeia e remove pessoas. Se o dono sair, o membro mais antigo vira dono; se sair o último, o grupo é apagado. Máximo de 10 pessoas. Até 4 imagens por mensagem. A pessoa pode apagar a própria mensagem, que vira "mensagem apagada"; editar fica para depois. Constantes em `server/api/Groups/GroupRules.cs`.
 
 ### R1 — Regra de senha no cadastro (passo 3)
 - O mockup dizia "mínimo de 4 caracteres". Resposta: manter a regra real (6 a 15, com maiúscula, minúscula e caractere especial). Já está assim no app.

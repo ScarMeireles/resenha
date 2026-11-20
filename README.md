@@ -92,7 +92,7 @@ resenha/
 - [x] **Passo 2 — API base:** contas (@, nome, foto, senha), login e testes.
 - [x] **Passo 3 — App Electron** com o layout dos mockups e telas de criar conta/entrar.
 - [x] **Passo 4 — Amigos:** pedidos, aceitar/recusar, status online (SignalR).
-- [ ] **Passo 5 — Grupos e chat:** criar grupo, adicionar amigos, mensagens e imagens.
+- [x] **Passo 5 — Grupos e chat:** criar grupo, adicionar amigos, mensagens e imagens.
 - [ ] **Passo 6 — Voz** na sala do grupo e ligação 1:1.
 - [ ] **Passo 7 — Câmera** e grade de vídeos.
 - [ ] **Passo 8 — Compartilhar tela** com seletor de janela/monitor e áudio do sistema.
