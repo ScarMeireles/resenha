@@ -78,7 +78,7 @@ function AddFriend({ inputRef, onSendRequest }: Pick<Props, 'inputRef' | 'onSend
       <div className="friends-add-row">
         <div className="friends-add-input">
           <span aria-hidden="true">@</span>
-          <input ref={inputRef} value={value} onChange={(e) => setValue(e.target.value)} placeholder="usuario"
+          <input ref={inputRef} value={value} onChange={(e) => { setValue(e.target.value); setResult(null) }} placeholder="usuario"
             aria-labelledby={`${id}-title`} aria-describedby={`${id}-help`} autoComplete="off" spellCheck={false} />
         </div>
         <button type="submit" className="friends-send" disabled={busy || username === ''}>
