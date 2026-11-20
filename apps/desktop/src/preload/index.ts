@@ -8,6 +8,10 @@ const bridge: ResenhaBridge = {
     save: (token) => ipcRenderer.invoke('session:save', token),
     clear: () => ipcRenderer.invoke('session:clear'),
   },
+  screen: {
+    listSources: () => ipcRenderer.invoke('screen:sources'),
+    choose: (choice) => ipcRenderer.invoke('screen:choose', choice),
+  },
 }
 
 contextBridge.exposeInMainWorld('resenha', bridge)

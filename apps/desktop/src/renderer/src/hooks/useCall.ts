@@ -177,6 +177,30 @@ export function useCall(token: string) {
     })
   }, [])
 
+  // Derivado dos participantes: reflete também quando o sistema encerra a captura por conta própria.
+  const screenSharing = participants.some((p) => p.isLocal && p.screen != null)
+
+  const startScreenShare = useCallback(async (sourceId: string, audio: boolean) => {
+    const conn = connRef.current
+    if (!conn) return
+    try {
+      await window.resenha.screen.choose({ sourceId, audio })
+      await conn.setScreenShare(true, audio)
+    } catch {
+      dispatch({ type: 'notice', message: 'Não foi possível compartilhar a tela.' })
+    }
+  }, [])
+
+  const stopScreenShare = useCallback(async () => {
+    const conn = connRef.current
+    if (!conn) return
+    try {
+      await conn.setScreenShare(false, false)
+    } catch {
+      dispatch({ type: 'notice', message: 'Não foi possível parar o compartilhamento.' })
+    }
+  }, [])
+
   const events: CallEvents = {
     callIncoming: ({ room, from }) => dispatch({ type: 'incoming', call: { room, from } }),
     callAccepted: ({ room }) => {
@@ -223,7 +247,7 @@ export function useCall(token: string) {
   hangUpRef.current = hangUp
   useEffect(() => () => hangUpRef.current(), [])
 
-  return { state, participants, prefs, viewing, setViewing, connectedAt, events, joinGroup, dial, accept, decline, leave, setMuted, setDeafened, cameraOn, setCamera }
+  return { state, participants, prefs, viewing, setViewing, connectedAt, events, joinGroup, dial, accept, decline, leave, setMuted, setDeafened, cameraOn, setCamera, screenSharing, startScreenShare, stopScreenShare }
 }
 
 export type CallApi = ReturnType<typeof useCall>
