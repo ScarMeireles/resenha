@@ -65,3 +65,18 @@ exponencial.
 9. **Limite por execução:** se a conversa principal já passou de umas 5 tarefas, ou ficou longa, registre o ponto em que
    parou no diário e encerre; a próxima execução agendada começa com contexto limpo e continua dali.
 10. **Respostas curtas:** sem recapitulações longas entre passos; o resumo final da execução tem no máximo 10 linhas.
+
+## Teste real com dois apps Electron
+
+Roteiro que funcionou no teste do passo 9 (20/11/2026). Scripts temporários ficam no scratchpad, nunca no repositório.
+
+1. Suba a API em segundo plano: `dotnet run --project server/api --launch-profile http` (LiveKit no Docker já rodando).
+2. Em `apps/desktop`, rode `npx electron-vite build`.
+3. Crie as contas e a amizade pela API: `POST /auth/register` duas vezes, `POST /friends/requests` e depois `.../accept`. Senha com 6 a 15 caracteres, maiúscula, minúscula e caractere especial.
+4. Abra cada instância pelo PowerShell, depois de `Remove-Item Env:ELECTRON_RUN_AS_NODE`:
+   `electron.exe . --remote-debugging-port=9301 --user-data-dir=<scratchpad>\profA --no-sandbox --use-fake-device-for-media-stream --use-fake-ui-for-media-stream`.
+   Na segunda, use a porta 9302 e `profB`. O `--user-data-dir` libera o `requestSingleInstanceLock`, e a sessão continua salva entre reinícios.
+5. Controle as janelas por CDP com um script Node. Para usar `getStats`, injete um wrapper de `RTCPeerConnection` que guarda as conexões em `window.__pcs`. Para forçar a camada 1080p da tela em quem assiste, use `Emulation.setDeviceMetricsOverride`, porque o `adaptiveStream` escolhe a camada pelo tamanho do vídeo na janela.
+6. Feche com `window.close()`, nunca matando o processo, porque isso perde a chave do `safeStorage`. Pare a API.
+
+Cuidados no PowerShell: JSON passado direto para o `node` perde as aspas, então passe por arquivo. E use `-Encoding utf8` no `Set-Content`.
