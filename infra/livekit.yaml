@@ -13,3 +13,10 @@ room:
 
 logging:
   level: info
+
+# Avisos de quem entrou/saiu das salas, enviados à API. A chave que assina esses avisos (webhook.api_key)
+# é a mesma LIVEKIT_API_KEY: o docker-compose a entrega pela variável LIVEKIT_WEBHOOK_API_KEY,
+# porque o LiveKit não expande ${VARIAVEL} dentro do yaml. A lista "urls" não aceita variável, por isso fica aqui.
+webhook:
+  urls:
+    - http://host.docker.internal:5280/livekit/webhook   # API em desenvolvimento (porta do launchSettings)

@@ -7,6 +7,9 @@ services:
     command: ["--config", "/etc/livekit.yaml", "--node-ip", "${LIVEKIT_NODE_IP:?defina LIVEKIT_NODE_IP no infra/.env}"]
     environment:
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY:?defina LIVEKIT_API_KEY no infra/.env}: ${LIVEKIT_API_SECRET:?defina LIVEKIT_API_SECRET no infra/.env}"
+      LIVEKIT_WEBHOOK_API_KEY: "${LIVEKIT_API_KEY}"   # chave que assina os webhooks (tem de ser uma das de LIVEKIT_KEYS)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # o contêiner enxerga a API que roda no seu PC
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     ports:
