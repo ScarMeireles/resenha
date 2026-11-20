@@ -1,14 +1,20 @@
 import { HubConnectionBuilder, LogLevel, type IHttpConnectionOptions } from '@microsoft/signalr'
 import { apiUrl } from './api'
 import type { FriendDto, FriendPresence, FriendRequestDto } from './friends'
+import type { GroupDto, MessageDto } from './groups'
 
-/** Eventos que o servidor manda (hub /hubs/app). */
+/** Eventos que o servidor manda (hub /hubs/app). Uma conexão só atende amigos e grupos. */
 export interface RealtimeHandlers {
   friendRequestReceived(request: FriendRequestDto): void
   friendAdded(friend: FriendDto): void
   friendRequestRemoved(payload: { requestId: string }): void
   friendRemoved(payload: { userId: string }): void
   presenceChanged(payload: { userId: string; presence: FriendPresence }): void
+  groupAdded(group: GroupDto): void
+  groupUpdated(group: GroupDto): void
+  groupRemoved(payload: { groupId: string }): void
+  messageCreated(message: MessageDto): void
+  messageDeleted(payload: { groupId: string; messageId: string }): void
   /** Chamado ao iniciar e ao reconectar: a presença pode ter mudado enquanto estava fora. */
   resync(): void
 }
@@ -40,6 +46,11 @@ export function createRealtime(token: string, handlers: RealtimeHandlers): Realt
   connection.on('friendRequestRemoved', handlers.friendRequestRemoved)
   connection.on('friendRemoved', handlers.friendRemoved)
   connection.on('presenceChanged', handlers.presenceChanged)
+  connection.on('groupAdded', handlers.groupAdded)
+  connection.on('groupUpdated', handlers.groupUpdated)
+  connection.on('groupRemoved', handlers.groupRemoved)
+  connection.on('messageCreated', handlers.messageCreated)
+  connection.on('messageDeleted', handlers.messageDeleted)
   connection.onreconnected(() => handlers.resync())
 
   return {

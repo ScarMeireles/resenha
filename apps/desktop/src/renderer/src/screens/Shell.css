@@ -5,6 +5,11 @@
   background: var(--bg-main);
   overflow: hidden;
 }
+.shell--group { grid-template-columns: 72px 248px minmax(0, 1fr) 240px; }
+@media (max-width: 999px) {
+  .shell--group { grid-template-columns: 72px 248px minmax(0, 1fr); }
+  .shell--group .members { display: none; }
+}
 
 /* --- Trilho de grupos --- */
 .rail {
@@ -14,6 +19,7 @@
   align-items: center;
   gap: 10px;
   padding: 12px 0;
+  overflow-y: auto;
 }
 .rail-item { position: relative; width: 72px; display: flex; justify-content: center; }
 .rail-pill {
@@ -25,17 +31,21 @@
   border-radius: 0 4px 4px 0;
   background: var(--text);
 }
-.rail-home {
+.rail-button {
   width: 48px;
   height: 48px;
+  flex: none;
   border: 0;
-  border-radius: 16px;
-  background: var(--orange);
-  color: var(--on-orange);
+  border-radius: 24px;
+  background: #2a2f38;
+  color: var(--text);
   font-family: var(--font-title);
   font-weight: 700;
-  font-size: 20px;
+  font-size: 16px;
 }
+.rail-button:hover { background: #343a45; }
+.rail-button[aria-current='page'] { border-radius: 16px; background: var(--orange); color: var(--on-orange); }
+.rail-home { font-size: 20px; }
 .rail-divider { width: 32px; height: 2px; border-radius: 1px; background: var(--border); }
 .rail-add {
   width: 48px;
@@ -48,7 +58,6 @@
   align-items: center;
   justify-content: center;
 }
-.rail-add:disabled { opacity: 0.5; }
 
 /* --- Cabeçalho comum das colunas --- */
 .pane-header {
