@@ -1,4 +1,5 @@
-import { AudioPresets, RemoteTrack, Room, RoomEvent, ScreenSharePresets, Track, VideoPresets, type Participant } from 'livekit-client'
+import { LocalAudioTrack, RemoteTrack, Room, RoomEvent, Track, type Participant } from 'livekit-client'
+import { buildRoomOptions, buildScreenShareOptions, DEFAULT_MEDIA_SETTINGS, type MediaSettings } from './mediaSettings'
 
 /** Camada fina sobre o livekit-client: conecta na sala, controla mic/som e entrega dados prontos para a tela. */
 
@@ -81,6 +82,11 @@ export interface VoiceConnection {
   setCamera(enabled: boolean): Promise<void>
   /** Liga/desliga o compartilhamento de tela (a fonte já foi escolhida no main). Erros sobem para quem chamou. */
   setScreenShare(enabled: boolean, audio: boolean): Promise<void>
+  /**
+   * Aplica as preferências de aparelho e ruído na hora. A qualidade nova (câmera/tela) só vale na próxima vez que
+   * você ligar a câmera ou a tela. Erros sobem para quem chamou.
+   */
+  applySettings(next: MediaSettings): Promise<void>
   disconnect(): void
 }
 
@@ -98,23 +104,11 @@ const toRaw = (p: Participant): RawParticipant => {
   }
 }
 
-export async function connectVoice(credentials: VoiceCredentials, initial: MicPrefs, handlers: VoiceHandlers): Promise<VoiceConnection> {
-  // Opus mono a 48 kbps (preset "music") com DTX (não gasta banda no silêncio) e RED (redundância contra
-  // perda de pacote). Cancelamento de eco, ruído e ganho automático ligados. Presets ajustáveis no passo 9.
-  const room = new Room({
-    adaptiveStream: true,
-    dynacast: true,
-    audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-    // Câmera: 720p 30 fps (~1,7 Mbps) com simulcast em 180p/360p para quem vê a câmera pequena ou tem rede
-    // fraca; VP8 por ser leve na CPU e decodificado em qualquer máquina. Ajustes finos no passo 9.
-    videoCaptureDefaults: { resolution: VideoPresets.h720.resolution },
-    publishDefaults: {
-      audioPreset: AudioPresets.music, dtx: true, red: true, forceStereo: false,
-      videoCodec: 'vp8', simulcast: true,
-      videoSimulcastLayers: [VideoPresets.h180, VideoPresets.h360],
-      videoEncoding: VideoPresets.h720.encoding,
-    },
-  })
+export async function connectVoice(
+  credentials: VoiceCredentials, initial: MicPrefs, handlers: VoiceHandlers, settings: MediaSettings = DEFAULT_MEDIA_SETTINGS,
+): Promise<VoiceConnection> {
+  const room = new Room(buildRoomOptions(settings))
+  let current = settings
 
   const prefs: MicPrefs = { ...initial }
   // Elemento de áudio de cada faixa remota, pelo objeto da faixa. Guardamos nós mesmos porque, quando quem publica
@@ -179,15 +173,24 @@ export async function connectVoice(credentials: VoiceCredentials, initial: MicPr
       emit()
     },
     async setScreenShare(enabled, audio) {
-      // 1080p a 30 fps (~5 Mbps no topo) em VP8: leve, sem depender de GPU. 'motion' porque entre amigos o mais
-      // comum é jogo/vídeo: com rede ruim o navegador baixa a resolução antes de travar o movimento.
-      // 60 fps fica para os presets do passo 9.
-      await room.localParticipant.setScreenShareEnabled(
-        enabled,
-        { audio, resolution: VideoPresets.h1080.resolution, contentHint: 'motion' },
-        { videoCodec: 'vp8', screenShareEncoding: ScreenSharePresets.h1080fps30.encoding },
-      )
+      const { capture, publish } = buildScreenShareOptions(current, audio)
+      await room.localParticipant.setScreenShareEnabled(enabled, capture, publish)
       emit()
+    },
+    async applySettings(next) {
+      const prev = current
+      current = next
+      if (next.audioInputId !== prev.audioInputId) await room.switchActiveDevice('audioinput', next.audioInputId ?? 'default')
+      if (next.audioOutputId !== prev.audioOutputId) await room.switchActiveDevice('audiooutput', next.audioOutputId ?? 'default')
+      if (next.videoInputId !== prev.videoInputId) await room.switchActiveDevice('videoinput', next.videoInputId ?? 'default')
+      if (next.noiseSuppression !== prev.noiseSuppression) {
+        const track = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track
+        if (track instanceof LocalAudioTrack) {
+          await track.restartTrack({
+            deviceId: next.audioInputId ?? undefined, echoCancellation: true, noiseSuppression: next.noiseSuppression, autoGainControl: true,
+          })
+        }
+      }
     },
     disconnect() {
       closing = true
