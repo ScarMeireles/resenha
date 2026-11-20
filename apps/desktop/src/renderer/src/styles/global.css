@@ -1,0 +1,109 @@
+/* Paleta e tipografia dos mockups aprovados (link no README). */
+:root {
+  --bg-rail: #111318;
+  --bg-sidebar: #181b21;
+  --bg-main: #1f232a;
+  --bg-panel: #14171c;
+  --bg-input: #111318;
+  --bg-hover: #2a2f38;
+  --bg-chip: #252a32;
+  --border: #2c313a;
+  --border-strong: #4a515d;
+
+  --text: #eceef1;
+  --text-soft: #d5d9e0;
+  --text-muted: #c4c9d2;
+  --text-faint: #a0a7b4;
+
+  --orange: #ff8a3d;
+  --orange-hover: #ff9a57;
+  --on-orange: #1a1206;
+  --green: #3ddc97;
+  --red: #ff7a7a;
+
+  --font-body: 'Inter Variable', Inter, system-ui, sans-serif;
+  --font-title: 'Space Grotesk', var(--font-body);
+
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg-rail);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+a { color: var(--orange-hover); }
+a:hover { color: #ffb580; }
+
+:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+
+/* Texto só para leitores de tela. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.brand-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--orange);
+  color: var(--on-orange);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 22px;
+}
+
+.btn-primary {
+  height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--orange);
+  color: var(--on-orange);
+  font-weight: 700;
+}
+.btn-primary:hover:not(:disabled) { background: var(--orange-hover); }
+.btn-primary:disabled { opacity: 0.6; }
+
+.btn-link {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--orange-hover);
+  text-decoration: underline;
+}
+.btn-link:hover { color: #ffb580; }
+
+/* Tela cheia centralizada: carregando, sem conexão. */
+.splash {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 24px;
+  color: var(--text-faint);
+}
+.splash p { margin: 0; max-width: 420px; }
+.splash .btn-primary { padding: 0 24px; }

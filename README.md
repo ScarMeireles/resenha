@@ -81,6 +81,7 @@ resenha/
 ├─ apps/desktop/        # Electron + React (o app que os amigos instalam)
 ├─ server/api/          # ASP.NET Core: contas, amigos, grupos, chat, tokens
 ├─ server/tests/        # testes xUnit da API (unidade e integração)
+├─ shared/              # regras de conta usadas pela API e pelo app (um teste garante que batem)
 ├─ infra/               # docker-compose e livekit.yaml
 └─ docs/
 ```
@@ -89,7 +90,7 @@ resenha/
 
 - [x] **Passo 1 — Fundação:** repositório, estrutura de pastas, LiveKit rodando no Docker local.
 - [x] **Passo 2 — API base:** contas (@, nome, foto, senha), login e testes.
-- [ ] **Passo 3 — App Electron** com o layout dos mockups e telas de criar conta/entrar.
+- [x] **Passo 3 — App Electron** com o layout dos mockups e telas de criar conta/entrar.
 - [ ] **Passo 4 — Amigos:** pedidos, aceitar/recusar, status online (SignalR).
 - [ ] **Passo 5 — Grupos e chat:** criar grupo, adicionar amigos, mensagens e imagens.
 - [ ] **Passo 6 — Voz** na sala do grupo e ligação 1:1.
@@ -134,3 +135,21 @@ O banco SQLite e as imagens ficam em `server/api/.data/`, que não vai para o Gi
 | `GET /users/{username}` | Perfil público de alguém |
 
 Imagens: JPG, PNG, GIF ou WebP de até 10 MB e 4096 px de lado; GIFs/WebPs animados continuam animados (até 300 quadros). Cadastro e login aceitam 10 tentativas por minuto por IP.
+
+## Rodando o app desktop
+
+Com a API rodando (seção acima), em outro terminal:
+
+```powershell
+cd apps/desktop
+npm install       # só na primeira vez
+npm run dev       # abre o app com recarregamento ao vivo
+npm test          # testes do app (Vitest)
+npm run build     # confere os tipos e gera o app em apps/desktop/out
+```
+
+O app procura a API em `http://localhost:5280`. Para outro endereço, copie `apps/desktop/.env.example` para `.env` e troque `VITE_API_URL`.
+
+- **Login lembrado:** o token fica em `%APPDATA%\resenha-desktop\session.bin`, criptografado com a proteção da conta do Windows. Copiado para outro PC ou usuário, não abre.
+- **Segurança da janela:** a tela não acessa o Node nem o disco, só o que o preload expõe. No app compilado, uma política de conteúdo (CSP) só deixa carregar código do próprio app e falar com a API.
+- Se o app não abrir dizendo que falta o Electron, rode `node node_modules/electron/install.js` dentro de `apps/desktop`.

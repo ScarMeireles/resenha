@@ -23,6 +23,7 @@ release/
 .data/
 logs/
 *.log
+*.tsbuildinfo
 
 # Editor / SO
 .idea/
