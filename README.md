@@ -8,8 +8,8 @@ Inspirado no Discord, mas bem menor: só amigos, grupos pequenos, sem servidores
 ## Objetivo do MVP
 
 **Contas e amigos**
-- Criar conta com **@ único**, nome, foto (opcional) e senha simples (mínimo 4 caracteres). Sem e-mail.
-- O app lembra o login.
+- Criar conta com **@ único** (3 a 20 caracteres: a-z, 0-9, `_` e `.`), nome, foto e banner opcionais (podem ser animados) e senha de 6 a 15 caracteres com maiúscula, minúscula e caractere especial. Sem e-mail.
+- O app lembra o login por 30 dias, renovando a cada uso.
 - Adicionar amigo pelo @. O outro precisa **aceitar o pedido**.
 - Status: online, em chamada, offline.
 
@@ -80,6 +80,7 @@ https://claude.ai/artifact/Gam7gRxXZjqXLii41on8Wf
 resenha/
 ├─ apps/desktop/        # Electron + React (o app que os amigos instalam)
 ├─ server/api/          # ASP.NET Core: contas, amigos, grupos, chat, tokens
+├─ server/tests/        # testes xUnit da API (unidade e integração)
 ├─ infra/               # docker-compose e livekit.yaml
 └─ docs/
 ```
@@ -87,7 +88,7 @@ resenha/
 ## Roteiro
 
 - [x] **Passo 1 — Fundação:** repositório, estrutura de pastas, LiveKit rodando no Docker local.
-- [ ] **Passo 2 — API base:** contas (@, nome, foto, senha), login e testes.
+- [x] **Passo 2 — API base:** contas (@, nome, foto, senha), login e testes.
 - [ ] **Passo 3 — App Electron** com o layout dos mockups e telas de criar conta/entrar.
 - [ ] **Passo 4 — Amigos:** pedidos, aceitar/recusar, status online (SignalR).
 - [ ] **Passo 5 — Grupos e chat:** criar grupo, adicionar amigos, mensagens e imagens.
@@ -111,3 +112,25 @@ curl http://localhost:7880           # deve responder "OK"
 ```
 
 Portas: `7880` (sinalização), `7881/tcp` e `7882/udp` (mídia). Para parar: `docker compose -f infra/docker-compose.yml down`.
+
+## Rodando a API
+
+```powershell
+powershell -File server/api/new-dev-settings.ps1   # só na primeira vez: gera a chave de assinatura dos logins
+dotnet run --project server/api                    # sobe em http://localhost:5280
+dotnet test server                                 # roda todos os testes
+```
+
+O banco SQLite e as imagens ficam em `server/api/.data/`, que não vai para o Git.
+
+| Rota | O que faz |
+|------|-----------|
+| `POST /auth/register` | Cria conta (`username`, `displayName`, `password`) e já devolve o token |
+| `POST /auth/login` | Entra com @ e senha |
+| `POST /auth/refresh` | Troca o token por um novo de 30 dias (o app chama ao abrir) |
+| `GET /me` · `PATCH /me` | Ver a própria conta · trocar o nome |
+| `PUT /me/avatar` · `DELETE /me/avatar` | Enviar (campo `file`) ou remover a foto. Vira WebP 256×256 |
+| `PUT /me/banner` · `DELETE /me/banner` | Enviar ou remover o banner. Vira WebP 960×320 |
+| `GET /users/{username}` | Perfil público de alguém |
+
+Imagens: JPG, PNG, GIF ou WebP de até 10 MB e 4096 px de lado; GIFs/WebPs animados continuam animados (até 300 quadros). Cadastro e login aceitam 10 tentativas por minuto por IP.
