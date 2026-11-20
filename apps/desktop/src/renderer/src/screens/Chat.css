@@ -1,7 +1,8 @@
 /* --- Barra lateral do grupo --- */
 .group-header { position: relative; gap: 4px; }
 .group-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.group-menu { top: calc(100% - 4px); bottom: auto; }
+/* Abre para baixo do cabeçalho. Duas classes para vencer o `bottom` do .user-menu (Shell.css carrega depois). */
+.user-menu.group-menu { top: calc(100% - 4px); bottom: auto; z-index: 20; }
 
 .channel {
   display: flex;
