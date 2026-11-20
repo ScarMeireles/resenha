@@ -44,3 +44,8 @@ export const UserPlusIcon = (p: P) => (
 export const LogOutIcon = (p: P) => (
   <Icon {...p}><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" /></Icon>
 )
+export const XIcon = (p: P) => <Icon {...p} strokeWidth={2.4}><path d="M18 6L6 18M6 6l12 12" /></Icon>
+export const ChatIcon = (p: P) => <Icon {...p}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></Icon>
+export const PhoneIcon = (p: P) => (
+  <Icon {...p}><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z" /></Icon>
+)

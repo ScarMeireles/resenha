@@ -55,7 +55,8 @@ export async function toApiError(response: Response): Promise<ApiError> {
   return new ApiError(problem.title ?? `O servidor respondeu com erro (${response.status}).`, response.status)
 }
 
-async function request<T>(method: string, path: string, options: { token?: string; json?: unknown; body?: FormData } = {}): Promise<T> {
+/** Chamada genérica à API. Exportada para os módulos de cada área (ex.: amigos). Respostas 204 voltam como undefined. */
+export async function request<T>(method: string, path: string, options: { token?: string; json?: unknown; body?: FormData; signal?: AbortSignal } = {}): Promise<T> {
   const headers: Record<string, string> = {}
   if (options.token) headers['Authorization'] = `Bearer ${options.token}`
   if (options.json !== undefined) headers['Content-Type'] = 'application/json'
@@ -66,12 +67,14 @@ async function request<T>(method: string, path: string, options: { token?: strin
       method,
       headers,
       body: options.json !== undefined ? JSON.stringify(options.json) : options.body,
+      signal: options.signal,
     })
   } catch {
     throw new ApiError('Não consegui falar com o servidor. Confira sua internet ou se a API está no ar.', 0)
   }
 
   if (!response.ok) throw await toApiError(response)
+  if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 

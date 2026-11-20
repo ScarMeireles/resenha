@@ -1,7 +1,9 @@
 import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react'
 import { CameraIcon, CheckIcon, EyeIcon, EyeOffIcon } from '../components/Icons'
+import { useUsernameAvailability } from '../hooks/useUsernameAvailability'
 import { imageAccept, rules, validateDisplayName, validateImage, validatePassword, validateUsername } from '../lib/accountRules'
 import { api, ApiError, type AuthResponse } from '../lib/api'
+import type { Availability } from '../lib/usernameAvailability'
 import './AuthScreen.css'
 
 type Mode = 'login' | 'register'
@@ -24,6 +26,7 @@ export function AuthScreen({ onAuthenticated }: Props) {
   const [busy, setBusy] = useState(false)
 
   const registering = mode === 'register'
+  const availability = useUsernameAvailability(username, registering)
 
   function switchMode(next: Mode) {
     setMode(next)
@@ -116,7 +119,8 @@ export function AuthScreen({ onAuthenticated }: Props) {
 
         <TextField label={registering ? 'Seu @ (único)' : 'Seu @'} errors={errors.username}
           hint={registering ? `De ${rules.usernameMinLength} a ${rules.usernameMaxLength} caracteres: letras, números, _ e ponto.` : undefined}
-          valid={registering && username.length > 0 && !validateUsername(username)}>
+          valid={registering && username.length > 0 && !validateUsername(username) && availability.kind === 'idle'}
+          status={registering ? availability : undefined}>
           {(props) => (
             <div className="auth-input auth-input--prefix" data-invalid={props['aria-invalid']}>
               <span aria-hidden="true">@</span>
@@ -168,11 +172,13 @@ interface InputProps {
 }
 
 /** Rótulo + campo + dica/erros, com tudo ligado para leitores de tela. */
-function TextField({ label, hint, errors, valid, children }: {
+function TextField({ label, hint, errors, valid, status, children }: {
   label: string
   hint?: string
   errors?: string[]
   valid?: boolean
+  /** Resultado da consulta de @ livre (só no cadastro). */
+  status?: Availability
   children(props: InputProps): ReactNode
 }) {
   const id = useId()
@@ -187,6 +193,10 @@ function TextField({ label, hint, errors, valid, children }: {
         <ul id={`${id}-errors`} className="auth-errors">
           {errors.map((e) => <li key={e}>{e}</li>)}
         </ul>
+      ) : status && status.kind !== 'idle' ? (
+        <span className={status.kind === 'available' ? 'auth-valid' : 'auth-taken'} role="status">
+          {status.kind === 'available' ? 'Disponível' : status.kind === 'taken' ? 'Em uso' : status.message}
+        </span>
       ) : valid ? (
         <span className="auth-valid">Formato válido</span>
       ) : hint ? (
