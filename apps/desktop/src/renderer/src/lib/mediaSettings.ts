@@ -1,0 +1,134 @@
+import { AudioPresets, ScreenSharePresets, VideoPresets, type AudioPreset, type RoomOptions, type VideoEncoding, type VideoPreset, type VideoResolution } from 'livekit-client'
+
+/** Preferências de áudio e vídeo da chamada, guardadas no localStorage. null = padrão do sistema. */
+
+export type QualityPreset = 'economia' | 'normal' | 'alta'
+
+export interface MediaSettings {
+  audioInputId: string | null
+  audioOutputId: string | null
+  videoInputId: string | null
+  noiseSuppression: boolean
+  quality: QualityPreset
+}
+
+export const DEFAULT_MEDIA_SETTINGS: MediaSettings = {
+  audioInputId: null,
+  audioOutputId: null,
+  videoInputId: null,
+  noiseSuppression: true,
+  quality: 'normal',
+}
+
+export const MEDIA_SETTINGS_KEY = 'resenha.mediaSettings'
+
+const QUALITIES: QualityPreset[] = ['economia', 'normal', 'alta']
+
+const idOrNull = (v: unknown, fallback: string | null): string | null =>
+  v === null ? null : typeof v === 'string' && v !== '' ? v : fallback
+
+/** Lê as preferências; JSON quebrado ou campo inválido cai no padrão daquele campo. */
+export function loadMediaSettings(storage: Pick<Storage, 'getItem'>): MediaSettings {
+  let raw: unknown
+  try {
+    const text = storage.getItem(MEDIA_SETTINGS_KEY)
+    raw = text ? JSON.parse(text) : null
+  } catch {
+    return { ...DEFAULT_MEDIA_SETTINGS }
+  }
+  if (typeof raw !== 'object' || raw === null) return { ...DEFAULT_MEDIA_SETTINGS }
+  const o = raw as Record<string, unknown>
+  const d = DEFAULT_MEDIA_SETTINGS
+  return {
+    audioInputId: idOrNull(o.audioInputId, d.audioInputId),
+    audioOutputId: idOrNull(o.audioOutputId, d.audioOutputId),
+    videoInputId: idOrNull(o.videoInputId, d.videoInputId),
+    noiseSuppression: typeof o.noiseSuppression === 'boolean' ? o.noiseSuppression : d.noiseSuppression,
+    quality: QUALITIES.includes(o.quality as QualityPreset) ? (o.quality as QualityPreset) : d.quality,
+  }
+}
+
+export function saveMediaSettings(storage: Pick<Storage, 'setItem'>, s: MediaSettings): void {
+  try {
+    storage.setItem(MEDIA_SETTINGS_KEY, JSON.stringify(s))
+  } catch {
+    // Sem armazenamento (cheio ou bloqueado): a preferência vale só nesta sessão.
+  }
+}
+
+interface VideoQuality {
+  resolution: VideoResolution
+  encoding: VideoEncoding
+  layers: VideoPreset[]
+}
+
+export interface QualityConfig {
+  label: string
+  description: string
+  audio: AudioPreset
+  camera: VideoQuality
+  screen: VideoQuality
+}
+
+// Opus com DTX (não gasta banda no silêncio) e RED (redundância contra perda de pacote) em todos os níveis.
+// O vídeo fica em VP8 em todos: leve na CPU e decodificado em qualquer máquina. As camadas de simulcast servem
+// a quem vê pequeno ou tem rede fraca. O nível Alta pesa na CPU de quem compartilha (1080p a 60 fps).
+export const QUALITY_PRESETS: Record<QualityPreset, QualityConfig> = {
+  economia: {
+    label: 'Economia',
+    description: 'Para internet fraca: voz 32 kbps, câmera 360p, tela 720p 15 fps.',
+    audio: { maxBitrate: 32_000 },
+    camera: { resolution: VideoPresets.h360.resolution, encoding: VideoPresets.h360.encoding, layers: [VideoPresets.h180] },
+    screen: { resolution: VideoPresets.h720.resolution, encoding: ScreenSharePresets.h720fps15.encoding, layers: [] },
+  },
+  normal: {
+    label: 'Normal',
+    description: 'Equilíbrio (padrão): voz 48 kbps, câmera 720p, tela 1080p 30 fps.',
+    audio: AudioPresets.music,
+    camera: { resolution: VideoPresets.h720.resolution, encoding: VideoPresets.h720.encoding, layers: [VideoPresets.h180, VideoPresets.h360] },
+    screen: { resolution: VideoPresets.h1080.resolution, encoding: ScreenSharePresets.h1080fps30.encoding, layers: [ScreenSharePresets.h720fps15] },
+  },
+  alta: {
+    label: 'Alta',
+    description: 'Internet boa e PC forte: voz 64 kbps, câmera 1080p, tela 1080p 60 fps.',
+    audio: { maxBitrate: 64_000 }, // o preset musicHighQuality do LiveKit é 96 kbps; aqui vale o que o texto promete
+    camera: { resolution: VideoPresets.h1080.resolution, encoding: VideoPresets.h1080.encoding, layers: [VideoPresets.h360, VideoPresets.h720] },
+    screen: {
+      resolution: { ...VideoPresets.h1080.resolution, frameRate: 60 },
+      encoding: { maxBitrate: 8_000_000, maxFramerate: 60 },
+      layers: [ScreenSharePresets.h720fps30],
+    },
+  },
+}
+
+export function buildRoomOptions(s: MediaSettings): RoomOptions {
+  const q = QUALITY_PRESETS[s.quality]
+  return {
+    adaptiveStream: true,
+    dynacast: true,
+    audioCaptureDefaults: {
+      deviceId: s.audioInputId ?? undefined,
+      echoCancellation: true,
+      noiseSuppression: s.noiseSuppression,
+      autoGainControl: true,
+    },
+    ...(s.audioOutputId ? { audioOutput: { deviceId: s.audioOutputId } } : {}),
+    videoCaptureDefaults: { deviceId: s.videoInputId ?? undefined, resolution: q.camera.resolution },
+    publishDefaults: {
+      audioPreset: q.audio, dtx: true, red: true, forceStereo: false,
+      videoCodec: 'vp8', simulcast: true,
+      videoSimulcastLayers: q.camera.layers,
+      videoEncoding: q.camera.encoding,
+      screenShareSimulcastLayers: q.screen.layers,
+    },
+  }
+}
+
+/** Opções do compartilhamento de tela. 'motion' porque entre amigos o mais comum é jogo/vídeo. */
+export function buildScreenShareOptions(s: MediaSettings, audio: boolean) {
+  const q = QUALITY_PRESETS[s.quality].screen
+  return {
+    capture: { audio, resolution: q.resolution, contentHint: 'motion' as const },
+    publish: { videoCodec: 'vp8' as const, screenShareEncoding: q.encoding, screenShareSimulcastLayers: q.layers },
+  }
+}
