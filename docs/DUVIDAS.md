@@ -26,6 +26,14 @@ Status possíveis: `aberta` (ainda não bloqueia), `bloqueante` (trava um passo)
 - Enquanto isso: fiz a opção A. Dá para ajustar o visual depois.
 - Resposta:
 
+### D3 — Regras e telas de chamada fora do pedido (passo 6)
+- Status: aberta
+- Passo: 6
+- Contexto: o roteiro não define o que acontece em alguns casos de chamada, e o mockup não tem a tela de "chamando" (quem liga) nem uma tela própria da ligação 1:1.
+- Opções: A) ligar só para amigo online (offline dá aviso "está offline"); toca por 30 s e depois cancela sozinho; ligar para quem já está em chamada toca mesmo assim; entrar numa sala sai da anterior (uma chamada por vez); a ligação 1:1 usa a mesma tela da sala de voz, com o nome do amigo no topo; quem liga vê um card "Chamando Fulano…" com botão "Cancelar", no mesmo estilo do card de ligação recebida (recomendado) · B) outras regras (diga quais).
+- Enquanto isso: fiz a opção A.
+- Resposta:
+
 _Respondidas no chat em 20/11/2026 ~06:10 (registradas abaixo em Resolvidas)._
 
 <!-- Modelo:
