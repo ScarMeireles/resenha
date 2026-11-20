@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 import { app, BrowserWindow, nativeTheme, shell } from 'electron'
 import { registerScreenHandlers } from './screen'
+import { registerScreenAudioHandlers } from './screenAudio'
 import { registerSessionHandlers } from './session'
 
 // Só uma janela do Resenha por vez: abrir de novo traz a que já está aberta para a frente.
@@ -54,6 +55,7 @@ app.on('second-instance', () => {
 app.whenReady().then(() => {
   registerSessionHandlers()
   registerScreenHandlers(() => mainWindow?.getMediaSourceId() ?? null)
+  registerScreenAudioHandlers()
   createWindow()
 })
 

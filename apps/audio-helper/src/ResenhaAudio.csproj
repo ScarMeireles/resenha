@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Ajudante nativo do Resenha: captura o áudio do Windows por processo
+    (API de "process loopback", Windows 10 2004+) e manda PCM pelo stdout.
+    O app Electron abre este .exe quando alguém compartilha a tela com áudio.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AssemblyName>resenha-audio</AssemblyName>
+    <RootNamespace>ResenhaAudio</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Publicação (npm run build:audio no apps/desktop): com RID win-x64 e self-contained gera um .exe só,
+         com o runtime junto, então o amigo não precisa instalar o .NET. -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ResenhaAudio.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  buildRoomOptions, buildScreenShareOptions, DEFAULT_MEDIA_SETTINGS, loadMediaSettings, MEDIA_SETTINGS_KEY, saveMediaSettings,
+  buildRoomOptions, buildScreenAudioPublish, buildScreenShareOptions, DEFAULT_MEDIA_SETTINGS, loadMediaSettings, MEDIA_SETTINGS_KEY, saveMediaSettings,
   type MediaSettings,
 } from './mediaSettings'
 
@@ -74,5 +74,11 @@ describe('buildScreenShareOptions', () => {
     expect(buildScreenShareOptions(settings(), true).capture.audio).toBe(true)
     expect(buildScreenShareOptions(settings(), false).capture.audio).toBe(false)
     expect(buildScreenShareOptions(settings(), false).capture.resolution.frameRate).not.toBe(60)
+  })
+
+  it('som da tela sai estéreo, sem DTX nem RED, com bitrate do nível', () => {
+    expect(buildScreenShareOptions(settings(), true).publish).toMatchObject({ audioPreset: { maxBitrate: 96_000 }, dtx: false, red: false, forceStereo: true })
+    expect(buildScreenAudioPublish(settings({ quality: 'economia' })).audioPreset.maxBitrate).toBe(64_000)
+    expect(buildScreenAudioPublish(settings({ quality: 'alta' })).audioPreset.maxBitrate).toBe(128_000)
   })
 })

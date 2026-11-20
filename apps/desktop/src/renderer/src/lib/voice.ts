@@ -1,5 +1,7 @@
 import { LocalAudioTrack, RemoteTrack, Room, RoomEvent, Track, type Participant } from 'livekit-client'
-import { buildRoomOptions, buildScreenShareOptions, DEFAULT_MEDIA_SETTINGS, type MediaSettings } from './mediaSettings'
+import type { ScreenAudioChoice } from '../../../preload/bridge'
+import { buildRoomOptions, buildScreenAudioPublish, buildScreenShareOptions, DEFAULT_MEDIA_SETTINGS, type MediaSettings } from './mediaSettings'
+import { startHelperAudio, type HelperAudio } from './screenAudio'
 
 /** Camada fina sobre o livekit-client: conecta na sala, controla mic/som e entrega dados prontos para a tela. */
 
@@ -73,6 +75,8 @@ export interface VoiceHandlers {
   onChange(participants: ParticipantView[]): void
   /** Queda da conexão por motivo que não foi o disconnect() chamado por nós. */
   onDropped(): void
+  /** Aviso que não derruba a chamada (ex.: o som da tela parou). */
+  onNotice(message: string): void
 }
 
 export interface VoiceConnection {
@@ -80,8 +84,11 @@ export interface VoiceConnection {
   setDeafened(deafened: boolean): Promise<void>
   /** Liga/desliga a câmera. Erros (sem câmera, permissão negada) sobem para quem chamou. */
   setCamera(enabled: boolean): Promise<void>
-  /** Liga/desliga o compartilhamento de tela (a fonte já foi escolhida no main). Erros sobem para quem chamou. */
-  setScreenShare(enabled: boolean, audio: boolean): Promise<void>
+  /**
+   * Liga/desliga o compartilhamento de tela (a fonte já foi escolhida no main). Erros da imagem sobem para quem chamou;
+   * se só o som do ajudante falhar, a tela segue sem som e vem um aviso pelo onNotice.
+   */
+  setScreenShare(enabled: boolean, audio: ScreenAudioChoice): Promise<void>
   /**
    * Aplica as preferências de aparelho e ruído na hora. A qualidade nova (câmera/tela) só vale na próxima vez que
    * você ligar a câmera ou a tela. Erros sobem para quem chamou.
@@ -124,6 +131,15 @@ export async function connectVoice(
   // para (ex.: fim do áudio da tela), o LiveKit já desanexou a faixa e o detach() volta vazio.
   const elements = new Map<RemoteTrack, HTMLMediaElement>()
   let closing = false
+  // Som da tela no modo "todo o áudio, menos...": faixa própria, publicada à parte do vídeo da tela.
+  let helperAudio: HelperAudio | null = null
+  const stopHelperAudio = async () => {
+    const audio = helperAudio
+    helperAudio = null
+    if (!audio) return
+    audio.stop()
+    await room.localParticipant.unpublishTrack(audio.track).catch(() => undefined)
+  }
 
   const emit = () => handlers.onChange(toParticipantViews([room.localParticipant, ...room.remoteParticipants.values()].map(toRaw)))
 
@@ -147,7 +163,12 @@ export async function connectVoice(
       elements.delete(track)
       emit()
     })
+    .on(RoomEvent.LocalTrackUnpublished, (pub) => {
+      // A imagem da tela acabou (botão parar ou o sistema encerrou a captura): o som do ajudante vai junto.
+      if (pub.source === Track.Source.ScreenShare) void stopHelperAudio()
+    })
     .on(RoomEvent.Disconnected, () => {
+      void stopHelperAudio()
       for (const el of elements.values()) el.remove()
       elements.clear()
       if (!closing) handlers.onDropped()
@@ -182,8 +203,22 @@ export async function connectVoice(
       emit()
     },
     async setScreenShare(enabled, audio) {
-      const { capture, publish } = buildScreenShareOptions(current, audio)
+      await stopHelperAudio()
+      const { capture, publish } = buildScreenShareOptions(current, audio.mode === 'all')
       await room.localParticipant.setScreenShareEnabled(enabled, capture, publish)
+      if (enabled && audio.mode === 'except') {
+        try {
+          const started = await startHelperAudio({ resenha: audio.resenha, exes: audio.exes }, () => {
+            void stopHelperAudio()
+            handlers.onNotice('O som da tela parou. A imagem continua.')
+          })
+          helperAudio = started
+          await room.localParticipant.publishTrack(started.track, { source: Track.Source.ScreenShareAudio, ...buildScreenAudioPublish(current) })
+        } catch {
+          await stopHelperAudio()
+          handlers.onNotice('Não foi possível capturar o som. A tela está sendo compartilhada sem áudio.')
+        }
+      }
       emit()
     },
     async applySettings(next) {
@@ -203,6 +238,7 @@ export async function connectVoice(
     },
     disconnect() {
       closing = true
+      void stopHelperAudio()
       void room.disconnect()
     },
   }

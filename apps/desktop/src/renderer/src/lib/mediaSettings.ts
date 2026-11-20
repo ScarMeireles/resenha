@@ -66,6 +66,8 @@ export interface QualityConfig {
   label: string
   description: string
   audio: AudioPreset
+  /** Som da tela (jogo, vídeo, música): estéreo, sem DTX nem RED. */
+  screenAudio: AudioPreset
   camera: VideoQuality
   screen: VideoQuality
 }
@@ -78,6 +80,7 @@ export const QUALITY_PRESETS: Record<QualityPreset, QualityConfig> = {
     label: 'Economia',
     description: 'Para internet fraca: voz 32 kbps, câmera 360p, tela 720p 15 fps.',
     audio: { maxBitrate: 32_000 },
+    screenAudio: { maxBitrate: 64_000 },
     camera: { resolution: VideoPresets.h360.resolution, encoding: VideoPresets.h360.encoding, layers: [VideoPresets.h180] },
     screen: { resolution: VideoPresets.h720.resolution, encoding: ScreenSharePresets.h720fps15.encoding, layers: [] },
   },
@@ -85,6 +88,7 @@ export const QUALITY_PRESETS: Record<QualityPreset, QualityConfig> = {
     label: 'Normal',
     description: 'Equilíbrio (padrão): voz 48 kbps, câmera 720p, tela 1080p 30 fps.',
     audio: AudioPresets.music,
+    screenAudio: { maxBitrate: 96_000 },
     camera: { resolution: VideoPresets.h720.resolution, encoding: VideoPresets.h720.encoding, layers: [VideoPresets.h180, VideoPresets.h360] },
     screen: { resolution: VideoPresets.h1080.resolution, encoding: ScreenSharePresets.h1080fps30.encoding, layers: [ScreenSharePresets.h720fps15] },
   },
@@ -92,6 +96,7 @@ export const QUALITY_PRESETS: Record<QualityPreset, QualityConfig> = {
     label: 'Alta',
     description: 'Internet boa e PC forte: voz 64 kbps, câmera 1080p, tela 1080p 60 fps.',
     audio: { maxBitrate: 64_000 }, // o preset musicHighQuality do LiveKit é 96 kbps; aqui vale o que o texto promete
+    screenAudio: { maxBitrate: 128_000 },
     camera: { resolution: VideoPresets.h1080.resolution, encoding: VideoPresets.h1080.encoding, layers: [VideoPresets.h360, VideoPresets.h720] },
     screen: {
       resolution: { ...VideoPresets.h1080.resolution, frameRate: 60 },
@@ -129,6 +134,15 @@ export function buildScreenShareOptions(s: MediaSettings, audio: boolean) {
   const q = QUALITY_PRESETS[s.quality].screen
   return {
     capture: { audio, resolution: q.resolution, contentHint: 'motion' as const },
-    publish: { videoCodec: 'vp8' as const, screenShareEncoding: q.encoding, screenShareSimulcastLayers: q.layers },
+    publish: { videoCodec: 'vp8' as const, screenShareEncoding: q.encoding, screenShareSimulcastLayers: q.layers, ...buildScreenAudioPublish(s) },
   }
+}
+
+/**
+ * Publicação do som da tela. Estéreo porque jogo, filme e música usam os dois lados. Sem DTX porque ele corta
+ * trechos baixos (bom para voz, mas em música dá falhas nos fade-outs). Sem RED porque a redundância dobraria
+ * um fluxo que já é grande. Vale tanto para o "todo o áudio" do Electron quanto para a faixa do ajudante.
+ */
+export function buildScreenAudioPublish(s: MediaSettings) {
+  return { audioPreset: QUALITY_PRESETS[s.quality].screenAudio, dtx: false, red: false, forceStereo: true }
 }

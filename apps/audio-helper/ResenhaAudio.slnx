@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/ResenhaAudio.csproj" />
+  <Project Path="tests/ResenhaAudio.Tests.csproj" />
+</Solution>
