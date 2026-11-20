@@ -1,0 +1,15 @@
+# Configuração do LiveKit (SFU). Sem segredos aqui: as chaves vêm da variável
+# LIVEKIT_KEYS, montada pelo docker-compose a partir do infra/.env.
+port: 7880            # HTTP + WebSocket de sinalização (o app e a API falam com esta porta)
+
+rtc:
+  tcp_port: 7881      # Plano B: mídia por TCP quando a rede bloqueia UDP
+  udp_port: 7882      # Toda a mídia UDP multiplexada numa porta só (fácil de liberar no firewall)
+  use_external_ip: false   # O IP anunciado vem de --node-ip (LIVEKIT_NODE_IP no .env)
+
+room:
+  empty_timeout: 300       # Sala vazia é fechada após 5 min
+  departure_timeout: 20
+
+logging:
+  level: info

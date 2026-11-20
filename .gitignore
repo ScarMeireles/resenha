@@ -1,0 +1,33 @@
+# Segredos — nunca versionar (use os arquivos *.example)
+.env
+.env.*
+!.env.example
+appsettings.Development.json
+appsettings.*.local.json
+
+# .NET
+bin/
+obj/
+*.user
+*.db
+*.db-shm
+*.db-wal
+
+# Node / Electron
+node_modules/
+dist/
+out/
+release/
+
+# Dados locais (uploads, logs)
+data/
+logs/
+*.log
+
+# Editor / SO
+.idea/
+.vs/
+.vscode/*
+!.vscode/extensions.json
+Thumbs.db
+.DS_Store

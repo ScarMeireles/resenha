@@ -1,0 +1,20 @@
+name: resenha
+
+services:
+  livekit:
+    image: livekit/livekit-server:v1.13.11
+    restart: unless-stopped
+    command: ["--config", "/etc/livekit.yaml", "--node-ip", "${LIVEKIT_NODE_IP:?defina LIVEKIT_NODE_IP no infra/.env}"]
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:?defina LIVEKIT_API_KEY no infra/.env}: ${LIVEKIT_API_SECRET:?defina LIVEKIT_API_SECRET no infra/.env}"
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "7880:7880"       # sinalização
+      - "7881:7881"       # mídia por TCP
+      - "7882:7882/udp"   # mídia por UDP
+    logging:              # logs com rotação e tamanho máximo (3 x 10 MB)
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

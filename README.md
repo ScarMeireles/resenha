@@ -1,0 +1,113 @@
+# Resenha
+
+App desktop (não é site) para chamadas de voz, câmera, compartilhamento de tela e chat entre amigos.
+Inspirado no Discord, mas bem menor: só amigos, grupos pequenos, sem servidores públicos, sem moderação.
+
+**Regra de ouro: custo zero.** Tudo roda em planos gratuitos ou no próprio PC. Nada que gere cobrança entra no projeto.
+
+## Objetivo do MVP
+
+**Contas e amigos**
+- Criar conta com **@ único**, nome, foto (opcional) e senha simples (mínimo 4 caracteres). Sem e-mail.
+- O app lembra o login.
+- Adicionar amigo pelo @. O outro precisa **aceitar o pedido**.
+- Status: online, em chamada, offline.
+
+**Grupos**
+- Criar grupo e adicionar amigos.
+- Cada grupo tem **um chat de texto** (com imagens) e **uma sala de voz**.
+
+**Chamadas**
+- Voz com boa qualidade (Opus, supressão de ruído e cancelamento de eco).
+- Câmera ligar/desligar.
+- Compartilhar tela (ou janela) em até 1080p/60fps, **com o áudio do PC** no Windows.
+- Indicador de quem está falando, mute/unmute.
+- **Ligação direta 1:1** entre amigos, sem precisar de grupo.
+
+**Distribuição**
+- Instalador `.exe` para mandar aos amigos.
+
+Fora do MVP (talvez depois): vários canais por grupo, atualização automática, versão Linux/macOS.
+
+## Visual
+
+Mockups aprovados (estilo Discord, paleta própria grafite + laranja):
+https://claude.ai/artifact/Gam7gRxXZjqXLii41on8Wf
+
+## Arquitetura
+
+```
+                        ┌──────────────── VM gratuita (Oracle Cloud) ─────────────────┐
+[App do amigo A] ──┐    │                                                             │
+[App do amigo B] ──┼────┼─► LiveKit (SFU)     ← áudio/vídeo/tela, ao vivo, nada gravado│
+[App do amigo C] ──┘    │      ▲ valida token                                          │
+        │               │      │                                                      │
+        └── HTTPS + ────┼─► API .NET ──► SQLite (contas, amigos, grupos, mensagens)    │
+            SignalR     │       └──────► disco (fotos e imagens do chat)              │
+                        └─────────────────────────────────────────────────────────────┘
+```
+
+| Peça | Tecnologia | Por quê |
+|------|------------|---------|
+| App desktop | **Electron + React + TypeScript** (Vite) | Usa o Chromium por dentro, que tem o melhor WebRTC que existe (o mesmo do Discord, que também é Electron). Captura de tela com áudio do sistema no Windows funciona de fábrica. |
+| Mídia | **LiveKit** (SFU, self-host) | Cada pessoa manda o vídeo **uma vez** para o servidor e ele redistribui. Escala bem para 3–10 amigos e cuida de qualidade adaptativa. Self-host = sem limite de minutos. |
+| API | **ASP.NET Core Minimal API** | Contas, amigos, grupos, chat, upload de imagens e emissão de tokens do LiveKit. Em C#. |
+| Tempo real | **SignalR** (vem no ASP.NET) | Mensagens novas, status online, pedidos de amizade e "fulano está te ligando" chegam na hora. |
+| Banco | **SQLite + EF Core** | Um arquivo só, sem servidor de banco para manter. Sobra para um grupo de amigos. |
+| Arquivos | Disco da VM (imagens convertidas para WebP) | Grátis e sem serviço extra. |
+
+### O que fica armazenado
+
+- **Guardado:** contas (senha com hash, nunca em texto), amizades, grupos, mensagens, imagens enviadas e fotos de perfil.
+- **Não guardado:** áudio, câmera e tela. Passam pelo LiveKit ao vivo e são descartados.
+- **Logs:** com rotação automática e tamanho máximo fixo.
+
+### Onde roda
+
+1. **Desenvolvimento:** `docker compose up` local (LiveKit) + API rodando no PC. Sem conta nenhuma.
+2. **Uso real:** VM **Always Free da Oracle Cloud**, região São Paulo, tudo em Docker.
+   Limites do plano gratuito, conferidos na
+   [página oficial](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm) em 20/11/2026:
+   - 2 núcleos ARM e 12 GB de RAM
+   - 200 GB de disco
+   - 10 TB/mês de tráfego de saída
+   - **Atenção:** a Oracle pode recolher VMs ociosas (CPU, rede e memória abaixo de 20% por 7 dias). Dimensionar a VM para o uso real no Passo 10.
+   - Por estar tudo em Docker, dá para trocar de servidor sem reescrever nada se a Oracle mudar o plano.
+
+## Estrutura planejada
+
+```
+resenha/
+├─ apps/desktop/        # Electron + React (o app que os amigos instalam)
+├─ server/api/          # ASP.NET Core: contas, amigos, grupos, chat, tokens
+├─ infra/               # docker-compose e livekit.yaml
+└─ docs/
+```
+
+## Roteiro
+
+- [x] **Passo 1 — Fundação:** repositório, estrutura de pastas, LiveKit rodando no Docker local.
+- [ ] **Passo 2 — API base:** contas (@, nome, foto, senha), login e testes.
+- [ ] **Passo 3 — App Electron** com o layout dos mockups e telas de criar conta/entrar.
+- [ ] **Passo 4 — Amigos:** pedidos, aceitar/recusar, status online (SignalR).
+- [ ] **Passo 5 — Grupos e chat:** criar grupo, adicionar amigos, mensagens e imagens.
+- [ ] **Passo 6 — Voz** na sala do grupo e ligação 1:1.
+- [ ] **Passo 7 — Câmera** e grade de vídeos.
+- [ ] **Passo 8 — Compartilhar tela** com seletor de janela/monitor e áudio do sistema.
+- [ ] **Passo 9 — Qualidade:** presets de bitrate, simulcast, supressão de ruído, seleção de microfone/fone.
+- [ ] **Passo 10 — Hospedagem real** na Oracle e teste com um amigo pela internet.
+- [ ] **Passo 11 — Instalador** `.exe` com electron-builder, publicado em Releases do GitHub (build local, sem CI).
+
+## Pré-requisitos (já instalados nesta máquina)
+
+Node 22, .NET 10 SDK, Docker, Git.
+
+## Rodando o LiveKit local
+
+```powershell
+powershell -File infra/new-env.ps1   # só na primeira vez: gera infra/.env com chave e segredo aleatórios
+docker compose -f infra/docker-compose.yml up -d
+curl http://localhost:7880           # deve responder "OK"
+```
+
+Portas: `7880` (sinalização), `7881/tcp` e `7882/udp` (mídia). Para parar: `docker compose -f infra/docker-compose.yml down`.
