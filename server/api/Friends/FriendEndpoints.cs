@@ -37,7 +37,7 @@ public static class FriendEndpoints
 
         var friends = rows.Where(f => f.Status == FriendshipStatus.Accepted)
             .Select(f => ToFriendDto(f, me, presence))
-            .OrderByDescending(f => f.Presence == PresenceTracker.Online)
+            .OrderByDescending(f => f.Presence != PresenceTracker.Offline)
             .ThenBy(f => f.User.DisplayName, StringComparer.CurrentCultureIgnoreCase)
             .ToArray();
         var incoming = rows.Where(f => f.Status == FriendshipStatus.Pending && f.AddresseeId == me)

@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { emptyFriends, friendsApi, friendsReducer } from '../lib/friends'
 import { groupsApi, groupsReducer, messagesReducer, reloadVoice, voiceReducer, type GroupDto, type MessagesState, type VoiceState } from '../lib/groups'
 import { createRealtime, type RealtimeHandlers } from '../lib/realtime'
+import { missedCallsApi, type MissedCallDto } from '../lib/missedCalls'
 
 /** Eventos de chamada, tratados por useCall. */
 export type CallEvents = Pick<RealtimeHandlers, 'callIncoming' | 'callAccepted' | 'callDeclined' | 'callCancelled' | 'callEnded'>
@@ -21,6 +22,8 @@ export function useRealtime(token: string, callEvents: CallEvents) {
   const [groups, dispatchGroups] = useReducer(groupsReducer, [] as GroupDto[])
   const [messages, dispatchMessages] = useReducer(messagesReducer, {} as MessagesState)
   const [groupsLoaded, markGroupsLoaded] = useReducer(() => true, false)
+  // Ligações que não tocaram porque o app estava fechado (vêm da API ao conectar e a cada reconexão).
+  const [missedCalls, setMissedCalls] = useState<MissedCallDto[]>([])
 
   // O resync precisa saber quais conversas já foram abertas, sem religar a conexão a cada mensagem.
   const openChats = useRef<string[]>([])
@@ -47,6 +50,7 @@ export function useRealtime(token: string, callEvents: CallEvents) {
         )
       }
       void reloadVoice(token, voiceGroups.current, (groupId, userIds) => !stopped && dispatchVoice({ groupId, userIds }))
+      void missedCallsApi.list(token).then((list) => !stopped && setMissedCalls(list), quiet)
     }
 
     const realtime = createRealtime(token, {
@@ -198,11 +202,18 @@ export function useRealtime(token: string, callEvents: CallEvents) {
     [token],
   )
 
+  /** Fechou o aviso: some da tela na hora e a API apaga. */
+  const dismissMissedCalls = useCallback(() => {
+    setMissedCalls([])
+    void missedCallsApi.clear(token).catch(() => undefined)
+  }, [token])
+
   return {
     friends, groups, groupsLoaded, messages, voice, loadVoice,
     sendRequest, accept, removeRequest,
     createGroup, renameGroup, addMembers, removeMember,
     loadMessages, loadOlder, sendMessage, deleteMessage,
+    missedCalls, dismissMissedCalls,
   }
 }
 

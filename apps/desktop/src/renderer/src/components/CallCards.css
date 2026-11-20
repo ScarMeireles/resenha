@@ -50,3 +50,25 @@
   font-weight: 600;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
+
+.call-card-btn--neutral { background: var(--bg-chip); color: var(--text); }
+
+/* Chamadas perdidas: lista compacta, sem o anel verde de "tocando". */
+.call-card--missed { align-items: stretch; gap: 10px; }
+.call-card--missed .avatar { margin: 0; box-shadow: none; }
+.missed-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.missed-row { display: flex; align-items: center; gap: 10px; }
+.missed-text { flex: 1; min-width: 0; font-size: 13px; color: var(--text-faint); }
+.missed-text strong { color: var(--text); font-weight: 600; }
+.missed-call-back {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--green);
+  color: #0b2a1d;
+}
+.missed-call-back:hover { filter: brightness(1.08); }

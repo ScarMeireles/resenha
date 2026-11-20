@@ -1,8 +1,7 @@
 import type { CSSProperties } from 'react'
 import { initialsOf, colorFor } from '../lib/avatar'
+import type { Presence } from '../lib/presence'
 import './Avatar.css'
-
-export type Presence = 'online' | 'in-call' | 'offline'
 
 interface Props {
   name: string

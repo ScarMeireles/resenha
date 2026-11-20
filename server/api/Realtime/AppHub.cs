@@ -19,8 +19,9 @@ public class AppHub(PresenceTracker presence, PresenceNotifier presenceNotifier,
         foreach (var groupId in groupIds)
             await Groups.AddToGroupAsync(Context.ConnectionId, GroupNotifier.HubGroup(groupId));
 
-        if (presence.Connected(userId, Context.ConnectionId))
-            await presenceNotifier.Notify(userId, PresenceTracker.Online);
+        var chosen = await db.Users.Where(u => u.Id == userId).Select(u => u.Status).FirstOrDefaultAsync() ?? UserStatuses.Online;
+        if (presence.Connected(userId, Context.ConnectionId, chosen) && presence.PresenceOf(userId) is var shown && shown != PresenceTracker.Offline)
+            await presenceNotifier.Notify(userId, shown); // invisível não avisa ninguém: para os outros, segue offline
         await base.OnConnectedAsync();
     }
 

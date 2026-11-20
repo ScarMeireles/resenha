@@ -171,6 +171,7 @@ app.MapFriendEndpoints();
 app.MapGroupEndpoints();
 app.MapVoiceEndpoints();
 app.MapCallEndpoints();
+app.MapStatusEndpoints();
 app.MapLiveKitWebhook();
 app.MapHub<AppHub>("/hubs/app");
 

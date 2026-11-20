@@ -1,6 +1,7 @@
 import { HubConnectionBuilder, LogLevel, type IHttpConnectionOptions } from '@microsoft/signalr'
 import { apiUrl, type User } from './api'
-import type { FriendDto, FriendPresence, FriendRequestDto } from './friends'
+import type { FriendDto, FriendRequestDto } from './friends'
+import type { Presence } from './presence'
 import type { GroupDto, MessageDto } from './groups'
 
 /** Quem agiu numa chamada: `userId` é a pessoa que aceitou, recusou, cancelou ou desligou. */
@@ -15,7 +16,7 @@ export interface RealtimeHandlers {
   friendAdded(friend: FriendDto): void
   friendRequestRemoved(payload: { requestId: string }): void
   friendRemoved(payload: { userId: string }): void
-  presenceChanged(payload: { userId: string; presence: FriendPresence }): void
+  presenceChanged(payload: { userId: string; presence: Presence }): void
   groupAdded(group: GroupDto): void
   groupUpdated(group: GroupDto): void
   groupRemoved(payload: { groupId: string }): void

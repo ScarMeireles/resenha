@@ -108,6 +108,23 @@
   gap: 6px;
   background: var(--bg-panel);
 }
+.user-panel-me {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  padding: 4px;
+  margin-left: -4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.user-panel-me:hover, .user-panel-me:focus-visible { background: var(--bg-hover); }
 .user-panel-names { display: flex; flex-direction: column; min-width: 0; flex: 1; margin-left: 4px; }
 .user-panel-name, .user-panel-handle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .user-panel-name { font-size: 14px; font-weight: 600; }
@@ -153,6 +170,16 @@
 }
 .user-menu-item:hover, .user-menu-item:focus-visible { background: var(--bg-hover); }
 .user-menu-item--danger { color: var(--red); }
+
+/* Menu de status (clicar no próprio avatar) */
+.user-menu-status { align-items: flex-start; }
+.user-menu-status-text { display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.user-menu-hint { font-size: 12px; color: var(--text-faint); }
+.user-menu-status[aria-checked="true"] { background: var(--bg-chip); }
+.status-dot { flex: none; width: 10px; height: 10px; margin-top: 4px; border-radius: 50%; box-sizing: border-box; }
+.status-dot--online { background: var(--green); }
+.status-dot--away { background: var(--yellow); }
+.status-dot--offline { border: 2px solid var(--text-faint); }
 
 /* --- Conteúdo --- */
 .content { display: flex; flex-direction: column; min-width: 0; }

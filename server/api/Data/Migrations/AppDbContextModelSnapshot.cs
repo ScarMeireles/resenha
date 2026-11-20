@@ -154,6 +154,30 @@ namespace Resenha.Api.Data.Migrations
                     b.ToTable("MessageImages");
                 });
 
+            modelBuilder.Entity("Resenha.Api.Data.MissedCall", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CalleeId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CallerId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CallerId");
+
+                    b.HasIndex("CalleeId", "CreatedAt");
+
+                    b.ToTable("MissedCalls");
+                });
+
             modelBuilder.Entity("Resenha.Api.Data.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -182,6 +206,13 @@ namespace Resenha.Api.Data.Migrations
 
                     b.Property<Guid>("SecurityStamp")
                         .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("online");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -265,6 +296,23 @@ namespace Resenha.Api.Data.Migrations
                         .HasForeignKey("MessageId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Resenha.Api.Data.MissedCall", b =>
+                {
+                    b.HasOne("Resenha.Api.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("CalleeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Resenha.Api.Data.User", "Caller")
+                        .WithMany()
+                        .HasForeignKey("CallerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Caller");
                 });
 
             modelBuilder.Entity("Resenha.Api.Data.Group", b =>

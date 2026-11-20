@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<MessageImage> MessageImages => Set<MessageImage>();
+    public DbSet<MissedCall> MissedCalls => Set<MissedCall>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -21,6 +22,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             user.Property(u => u.DisplayName).HasMaxLength(AccountRules.DisplayNameMaxLength);
             user.Property(u => u.AvatarFile).HasMaxLength(64);
             user.Property(u => u.BannerFile).HasMaxLength(64);
+            user.Property(u => u.Status).HasMaxLength(16).HasDefaultValue(UserStatuses.Online);
         });
 
         modelBuilder.Entity<Friendship>(friendship =>
@@ -58,5 +60,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         });
 
         modelBuilder.Entity<MessageImage>(image => image.Property(i => i.File).HasMaxLength(64));
+
+        modelBuilder.Entity<MissedCall>(missed =>
+        {
+            missed.Property(m => m.CreatedAt).HasConversion(v => v.UtcTicks, v => new DateTimeOffset(v, TimeSpan.Zero));
+            missed.HasIndex(m => new { m.CalleeId, m.CreatedAt });
+            missed.HasOne(m => m.Caller).WithMany().HasForeignKey(m => m.CallerId).OnDelete(DeleteBehavior.Cascade);
+            missed.HasOne<User>().WithMany().HasForeignKey(m => m.CalleeId).OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }
