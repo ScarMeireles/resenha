@@ -4,6 +4,22 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (passo 11, instalador)
+- O usuário escolheu o passo 11 antes do 10. Branch `feature/passo-11-instalador`.
+- Instalado `electron-builder` 26.18.0 (gratuito) como devDependency. A configuração está em `apps/desktop/electron-builder.yml`:
+  - NSIS de um clique, só para o usuário atual e sem administrador, com atalhos.
+  - `resources/audio` vai como `extraResources`, e o ajudante fica em `resources/audio`.
+  - Sem assinatura (o certificado custa dinheiro) e `publish: null`.
+- `npm run dist` faz typecheck, build, ajudante de áudio e instalador. Ícone em `build/icon.png`, gerado por `scripts/make-icon.cjs` (`npm run make:icon`) a partir do `.brand-mark`.
+- As dependências do app foram para `devDependencies`. O main e o preload só usam `electron` e `node:*`, e o renderer já vai empacotado pelo Vite. Com isso, o `app.asar` caiu de 3.821 para 31 arquivos. Instalador: 146 MB.
+- Teste real com o instalador (`/S`):
+  - Ficaram certos a pasta em `%LOCALAPPDATA%\Programs\resenha-desktop`, os atalhos e o registro.
+  - O app instalado criou conta pela tela, criou grupo e entrou na sala de voz ("Conectado", "1 na sala"). Isso prova que a CSP do build fala com a API, o SignalR e o LiveKit.
+  - O ajudante de áudio foi achado em `resources/audio`: listou os apps e capturou 583.680 bytes em ~1,5 s (PCM estéreo de 48 kHz). Ao parar, não sobrou processo.
+  - A desinstalação (`/S`) removeu a pasta, o atalho e o registro.
+- Achado: o pacote não grava `productName`, então o app instalado usa a pasta de dados `%APPDATA%\resenha-desktop`, a mesma do modo dev.
+- Falta no passo 11: publicar em Releases. Isso depende do passo 10 (`VITE_API_URL`/`VITE_LIVEKIT_URL` reais no `.env` do build) e de um push autorizado.
+
 ## 20/11/2026 — sessão interativa (áudio da tela com três opções, do R9)
 - O usuário escolheu um ajudante em C# em vez de um módulo C++, porque a máquina não tem compilador C++ e o código C# é mais fácil de manter. Branch `feature/audio-da-tela`.
 - Ajudante novo em `apps/audio-helper`:

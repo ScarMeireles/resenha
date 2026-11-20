@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "App desktop do Resenha: voz, câmera, tela e chat entre amigos.",
+  "author": "Resenha",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -10,23 +11,24 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
-    "build:audio": "dotnet publish ../audio-helper/src -c Release -r win-x64 --self-contained -o resources/audio"
+    "build:audio": "dotnet publish ../audio-helper/src -c Release -r win-x64 --self-contained -o resources/audio",
+    "dist": "npm run build && npm run build:audio && electron-builder --win",
+    "make:icon": "electron scripts/make-icon.cjs"
   },
-  "dependencies": {
+  "devDependencies": {
     "@fontsource-variable/inter": "^5.3.0",
     "@fontsource/space-grotesk": "^5.3.0",
     "@microsoft/signalr": "^11.0.0",
-    "livekit-client": "^2.24.1",
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1"
-  },
-  "devDependencies": {
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
     "electron": "^45.4.1",
+    "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
+    "livekit-client": "^2.24.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
     "vitest": "^5.1.1"
