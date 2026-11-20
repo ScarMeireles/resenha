@@ -34,8 +34,9 @@ export function registerScreenHandlers(getOwnSourceId: () => string | null): voi
       const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] })
       const source = sources.find((s) => s.id === choice.sourceId)
       if (!source) return callback({})
-      // No Windows, 'loopback' captura o áudio do sistema inteiro (não só da janela escolhida).
-      callback({ video: source, ...(choice.audio ? { audio: 'loopback' as const } : {}) })
+      // No Windows, 'loopback' captura o áudio do sistema inteiro (não só da janela escolhida), inclusive o do Resenha.
+      // O modo "menos estes apps" não passa por aqui: o som vem do ajudante (screenAudio.ts).
+      callback({ video: source, ...(choice.audio.mode === 'all' ? { audio: 'loopback' as const } : {}) })
     } catch {
       callback({})
     }

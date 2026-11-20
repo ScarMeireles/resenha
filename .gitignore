@@ -32,3 +32,6 @@ logs/
 !.vscode/extensions.json
 Thumbs.db
 .DS_Store
+
+# Ajudante de áudio publicado (gerado por npm run build:audio)
+apps/desktop/resources/audio/

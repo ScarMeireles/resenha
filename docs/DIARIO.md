@@ -4,6 +4,27 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (áudio da tela com três opções, do R9)
+- O usuário escolheu um ajudante em C# em vez de um módulo C++, porque a máquina não tem compilador C++ e o código C# é mais fácil de manter. Branch `feature/audio-da-tela`.
+- Ajudante novo em `apps/audio-helper`:
+  - `src/` gera o `resenha-audio.exe`, que usa a API de captura por processo do Windows. Comandos: `list` mostra os apps com som, e `capture` escreve PCM float estéreo 48 kHz em blocos de 10 ms no stdout e para quando o stdin fecha.
+  - Com só o Resenha excluído, faz uma captura "tudo menos este processo". Com mais apps, captura um a um os apps que ficam e mistura, conferindo a lista a cada 2 s.
+  - `tests/` tem 13 testes (fila, mistura e plano de captura).
+  - O .exe publicado tem 36 MB. Não fica menor porque o interop COM clássico não aceita trimming; dá para reduzir depois com o interop gerado em código.
+- Electron:
+  - `main/screenAudio.ts` abre o ajudante e repassa o PCM em quadros inteiros (`screenAudioFrames.ts`).
+  - No renderer, o `pcmPlayer.worklet.ts` com o `PcmQueue` (escorva de 40 ms e teto de 200 ms) monta a faixa, publicada como `ScreenShareAudio`.
+  - O seletor tem três rádios: Sem áudio, Todo o áudio do PC e Todo o áudio menos (Resenha marcado + apps com som). A escolha fica salva em `resenha.screenAudio`.
+  - O som da tela sai em Opus estéreo a 64, 96 ou 128 kbps por nível, sem DTX e sem RED.
+  - Novo script `npm run build:audio`, que exige o SDK do .NET 10. A pasta `resources/audio/` fica no `.gitignore`.
+- Testes: app 176 (era 156), ajudante 13; build OK.
+- Teste real com dois Electron (@au_a6008/@au_b6008, ligação 1:1):
+  - Passaram: o seletor, o "menos Resenha" com o tom chegando (Opus estéreo a ~96 kbps, rótulo "com áudio") e o "menos Resenha + Powershell" (tom excluído: rms 0,0003 contra 0,097).
+  - Ao parar, o ajudante encerra em menos de 0,1 s. Ao fechar a janela, não fica processo órfão. Nenhum erro no console.
+  - O próprio ajudante mostrou que a exclusão do Resenha funciona: 10 a 30 vezes menos som.
+- **Ainda sem prova:** o eco no app (item 5). O PC tinha Discord e outros apps tocando, o que contaminou a medida. Também parece que "Todo o áudio do PC" (o `loopback` do Electron) talvez já não inclua o som do próprio Resenha, o que contradiz o aviso no seletor. Reconferir numa máquina silenciosa antes de mudar o texto.
+- Para o passo 11: o electron-builder precisa levar `resources/audio/resenha-audio.exe` como `extraResources` (o main procura em `process.resourcesPath/audio`).
+
 ## 20/11/2026 — sessão interativa (status e chamada perdida, do R8)
 - Branch `feature/status-e-chamada-perdida`, mergeada em `hml`.
 - API:

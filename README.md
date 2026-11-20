@@ -20,7 +20,7 @@ Inspirado no Discord, mas bem menor: só amigos, grupos pequenos, sem servidores
 **Chamadas**
 - Voz com boa qualidade (Opus, supressão de ruído e cancelamento de eco).
 - Câmera ligar/desligar.
-- Compartilhar tela (ou janela) em até 1080p/60fps, **com o áudio do PC** no Windows.
+- Compartilhar tela (ou janela) em até 1080p/60fps, **com o áudio do PC** no Windows (todo, ou todo menos os apps que você marcar).
 - Indicador de quem está falando, mute/unmute.
 - **Ligação direta 1:1** entre amigos, sem precisar de grupo.
 
@@ -147,7 +147,12 @@ A API precisa da chave e do segredo do LiveKit para assinar os tokens de voz. Em
 
 **Câmera:** botão na barra da chamada; o vídeo aparece no lugar do avatar (o seu, espelhado). Captura em 720p 30 fps (~1,7 Mbps) com simulcast em 180p e 360p: o LiveKit manda a camada do tamanho em que cada um vê o vídeo (`adaptiveStream`) e para de enviar camadas que ninguém está vendo (`dynacast`). Codec VP8, leve na CPU. Ajustes finos no passo 9.
 
-**Compartilhar tela:** botão de monitor na barra abre o seletor do próprio app (abas Telas e Janelas, com miniaturas; a janela do Resenha não aparece). O main do Electron guarda a escolha por 15 s e entrega exatamente essa fonte quando o Chromium pede a captura (`setDisplayMediaRequestHandler`). Envia 1080p 30 fps (até ~5 Mbps) em VP8 com `contentHint: 'motion'`: com rede ruim cai a resolução antes de travar o movimento, bom para jogo e vídeo. A tela vira o palco e as pessoas ficam numa faixa embaixo; quem assiste pequeno ou com rede fraca recebe uma camada menor (simulcast). O áudio do computador é opcional (desmarcado por padrão): no Windows ele pega o som do sistema inteiro, inclusive as vozes da chamada, então use fone.
+**Compartilhar tela:** botão de monitor na barra abre o seletor do próprio app (abas Telas e Janelas, com miniaturas; a janela do Resenha não aparece). O main do Electron guarda a escolha por 15 s e entrega exatamente essa fonte quando o Chromium pede a captura (`setDisplayMediaRequestHandler`). Envia 1080p 30 fps (até ~5 Mbps) em VP8 com `contentHint: 'motion'`: com rede ruim cai a resolução antes de travar o movimento, bom para jogo e vídeo. A tela vira o palco e as pessoas ficam numa faixa embaixo; quem assiste pequeno ou com rede fraca recebe uma camada menor (simulcast). O som tem três opções (a última escolha fica salva):
+- **Sem áudio** (o padrão).
+- **Todo o áudio do PC:** o `loopback` do Electron pega o som do sistema inteiro, inclusive as vozes da chamada. Quem está na chamada ouve a própria voz de volta, mesmo que você use fone.
+- **Todo o áudio, menos:** uma lista com o Resenha (marcado por padrão, evita o eco) e os apps que estão tocando som (Discord, Spotify...). Quem captura é o ajudante `resenha-audio.exe` (`apps/audio-helper`, em C#), que usa a API de captura por processo do Windows 10 2004+. O Windows só exclui um processo por captura. Com só o Resenha marcado, basta uma captura "tudo menos o Resenha". Com mais apps marcados, o ajudante captura um a um os apps que ficam e mistura o som, e a lista é conferida a cada 2 s. O PCM (float, estéreo, 48 kHz) vai pelo stdout até o main, que repassa para a janela, onde um AudioWorklet monta a faixa publicada no LiveKit.
+
+O som da tela sai em Opus **estéreo** (jogo, filme e música usam os dois lados) a 64, 96 ou 128 kbps (Economia, Normal e Alta). DTX fica desligado, porque ele corta trechos baixos e em música dá falhas nos fade-outs. RED também fica desligado, porque a redundância dobraria um fluxo que já é grande.
 
 | Rota | O que faz |
 |------|-----------|
@@ -168,6 +173,7 @@ Com a API rodando (seção acima), em outro terminal:
 ```powershell
 cd apps/desktop
 npm install       # só na primeira vez
+npm run build:audio  # só na primeira vez (e quando mudar apps/audio-helper): gera resources/audio/resenha-audio.exe
 npm run dev       # abre o app com recarregamento ao vivo
 npm test          # testes do app (Vitest)
 npm run build     # confere os tipos e gera o app em apps/desktop/out
@@ -178,3 +184,4 @@ O app procura a API em `http://localhost:5280`. Para outro endereço, copie `app
 - **Login lembrado:** o token fica em `%APPDATA%\resenha-desktop\session.bin`, criptografado com a proteção da conta do Windows. Copiado para outro PC ou usuário, não abre.
 - **Segurança da janela:** a tela não acessa o Node nem o disco, só o que o preload expõe. No app compilado, uma política de conteúdo (CSP) só deixa carregar código do próprio app e falar com a API.
 - Se o app não abrir dizendo que falta o Electron, rode `node node_modules/electron/install.js` dentro de `apps/desktop`.
+- **Ajudante de áudio:** o `build:audio` precisa do SDK do .NET 10 (o mesmo da API). Ele gera um `.exe` único de ~36 MB, com o runtime junto, então quem instala o app não precisa ter o .NET. Testes: `dotnet test apps/audio-helper/ResenhaAudio.slnx`. Sem o `.exe`, a opção "Todo o áudio, menos" avisa que não deu para capturar e a tela segue sem som.

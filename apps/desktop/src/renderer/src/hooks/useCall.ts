@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react'
+import type { ScreenAudioChoice } from '../../../preload/bridge'
 import type { User } from '../lib/api'
 import {
   callReducer, callsApi, initialCallState, isCurrentRoom, NOTICE_MS, startRingTimeout, type CallState,
@@ -63,6 +64,7 @@ export function useCall(token: string) {
           teardown()
           dispatch({ type: 'failed', message: 'A conexão de voz caiu.' })
         },
+        onNotice: (message) => attempt === attemptRef.current && dispatch({ type: 'notice', message }),
       }, mediaSettingsRef.current)
       if (attempt !== attemptRef.current) {
         conn.disconnect()
@@ -192,7 +194,7 @@ export function useCall(token: string) {
   // Derivado dos participantes: reflete também quando o sistema encerra a captura por conta própria.
   const screenSharing = participants.some((p) => p.isLocal && p.screen != null)
 
-  const startScreenShare = useCallback(async (sourceId: string, audio: boolean) => {
+  const startScreenShare = useCallback(async (sourceId: string, audio: ScreenAudioChoice) => {
     const conn = connRef.current
     if (!conn) return
     try {
@@ -207,7 +209,7 @@ export function useCall(token: string) {
     const conn = connRef.current
     if (!conn) return
     try {
-      await conn.setScreenShare(false, false)
+      await conn.setScreenShare(false, { mode: 'none' })
     } catch {
       dispatch({ type: 'notice', message: 'Não foi possível parar o compartilhamento.' })
     }

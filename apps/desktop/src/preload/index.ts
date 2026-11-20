@@ -12,6 +12,19 @@ const bridge: ResenhaBridge = {
     listSources: () => ipcRenderer.invoke('screen:sources'),
     choose: (choice) => ipcRenderer.invoke('screen:choose', choice),
   },
+  screenAudio: {
+    listApps: () => ipcRenderer.invoke('screen-audio:apps'),
+    start: (request) => ipcRenderer.invoke('screen-audio:start', request),
+    stop: () => ipcRenderer.invoke('screen-audio:stop'),
+    onData: (listener) => subscribe('screen-audio:data', (_event, data: Uint8Array) => listener(data)),
+    onEnded: (listener) => subscribe('screen-audio:ended', () => listener()),
+  },
+}
+
+/** Assina um evento do main e devolve a função que cancela; a tela nunca recebe o `event` do Electron. */
+function subscribe(channel: string, handler: Parameters<typeof ipcRenderer.on>[1]): () => void {
+  ipcRenderer.on(channel, handler)
+  return () => { ipcRenderer.removeListener(channel, handler) }
 }
 
 contextBridge.exposeInMainWorld('resenha', bridge)
