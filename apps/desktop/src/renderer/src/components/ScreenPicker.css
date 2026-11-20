@@ -1,0 +1,40 @@
+.screen-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+.screen-tab {
+  height: 34px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--bg-chip);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 14px;
+}
+.screen-tab[aria-selected='true'] { background: var(--orange); color: var(--on-orange); }
+
+.screen-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 300px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.screen-item {
+  width: 100%;
+  padding: 6px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: var(--bg-main);
+  color: var(--text);
+  text-align: left;
+}
+.screen-item:hover { background: var(--bg-hover); }
+.screen-item--selected { border-color: var(--orange); }
+.screen-thumb { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 6px; background: #111318; }
+.screen-name { display: block; margin-top: 6px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.screen-audio { display: flex; align-items: center; gap: 10px; margin-top: 16px; font-size: 14px; cursor: pointer; }
+.screen-audio input { width: 18px; height: 18px; accent-color: var(--orange); }
+.screen-audio-hint { margin: 6px 0 0 28px; font-size: 12px; color: var(--text-faint); line-height: 1.4; }

@@ -1,9 +1,9 @@
 import type { Track } from 'livekit-client'
 import { describe, expect, it } from 'vitest'
-import { formatDuration, micEnabled, toParticipantViews, type MicPrefs, type RawParticipant } from './voice'
+import { formatDuration, formatScreenLabel, micEnabled, pickStage, toParticipantViews, type MicPrefs, type ParticipantView, type RawParticipant } from './voice'
 
 const raw = (identity: string, extra: Partial<RawParticipant> = {}): RawParticipant => ({
-  identity, isLocal: false, isSpeaking: false, isMicrophoneEnabled: true, cameraTrack: null, ...extra,
+  identity, isLocal: false, isSpeaking: false, isMicrophoneEnabled: true, cameraTrack: null, screenTrack: null, hasScreenAudio: false, ...extra,
 })
 
 describe('toParticipantViews', () => {
@@ -24,6 +24,13 @@ describe('toParticipantViews', () => {
     const [a, b] = toParticipantViews([raw('a', { cameraTrack: track }), raw('b')])
     expect(a.camera).toBe(track)
     expect(b.camera).toBeNull()
+  })
+
+  it('repassa a tela e o áudio da tela', () => {
+    const track = {} as Track
+    const [a, b] = toParticipantViews([raw('a', { screenTrack: track, hasScreenAudio: true }), raw('b')])
+    expect(a).toMatchObject({ screen: track, screenAudio: true })
+    expect(b).toMatchObject({ screen: null, screenAudio: false })
   })
 
   it('lista vazia continua vazia', () => {
@@ -59,5 +66,47 @@ describe('formatDuration', () => {
 
   it('não mostra negativo', () => {
     expect(formatDuration(-5)).toBe('00:00:00')
+  })
+})
+
+describe('formatScreenLabel', () => {
+  it('monta nome, altura e áudio', () => {
+    expect(formatScreenLabel('Ana', 1080, true)).toBe('Tela de Ana · 1080p · com áudio')
+  })
+
+  it('omite altura e áudio quando não há', () => {
+    expect(formatScreenLabel('Ana', null, false)).toBe('Tela de Ana')
+    expect(formatScreenLabel('Ana', 720, false)).toBe('Tela de Ana · 720p')
+    expect(formatScreenLabel('Ana', null, true)).toBe('Tela de Ana · com áudio')
+  })
+
+  it('para você diz "Sua tela"', () => {
+    expect(formatScreenLabel('Você', 1080, false)).toBe('Sua tela · 1080p')
+  })
+})
+
+describe('pickStage', () => {
+  const view = (id: string, extra: Partial<ParticipantView> = {}): ParticipantView => ({
+    id, isLocal: false, isSpeaking: false, isMuted: false, camera: null, screen: null, screenAudio: false, ...extra,
+  })
+  const screen = {} as Track
+
+  it('devolve null quando ninguém compartilha', () => {
+    expect(pickStage([view('me', { isLocal: true }), view('a')], null)).toBeNull()
+  })
+
+  it('prefere quem está em foco', () => {
+    const list = [view('me', { isLocal: true, screen }), view('a', { screen }), view('b', { screen })]
+    expect(pickStage(list, 'b')?.id).toBe('b')
+  })
+
+  it('sem foco (ou foco que não compartilha) pega o primeiro remoto', () => {
+    const list = [view('me', { isLocal: true, screen }), view('a', { screen }), view('b', { screen })]
+    expect(pickStage(list, null)?.id).toBe('a')
+    expect(pickStage([...list, view('c')], 'c')?.id).toBe('a')
+  })
+
+  it('só você compartilhando: você no palco', () => {
+    expect(pickStage([view('me', { isLocal: true, screen }), view('a')], null)?.id).toBe('me')
   })
 })

@@ -95,7 +95,7 @@ resenha/
 - [x] **Passo 5 — Grupos e chat:** criar grupo, adicionar amigos, mensagens e imagens.
 - [x] **Passo 6 — Voz** na sala do grupo e ligação 1:1.
 - [x] **Passo 7 — Câmera** e grade de vídeos.
-- [ ] **Passo 8 — Compartilhar tela** com seletor de janela/monitor e áudio do sistema.
+- [x] **Passo 8 — Compartilhar tela** com seletor de janela/monitor e áudio do sistema.
 - [ ] **Passo 9 — Qualidade:** presets de bitrate, simulcast, supressão de ruído, seleção de microfone/fone.
 - [ ] **Passo 10 — Hospedagem real** na Oracle e teste com um amigo pela internet.
 - [ ] **Passo 11 — Instalador** `.exe` com electron-builder, publicado em Releases do GitHub (build local, sem CI).
@@ -129,6 +129,8 @@ A API precisa da chave e do segredo do LiveKit para assinar os tokens de voz. Em
 **Voz e ligações:** `POST /groups/{id}/voice/token` (entrar na sala do grupo), `GET /groups/{id}/voice` (quem está na sala), `POST /calls/{amigoId}` (ligar) e `/accept`, `/decline`, `/cancel`, `/hangup`. O áudio é Opus mono a 48 kbps com DTX (não gasta banda no silêncio) e RED (redundância contra perda de pacote), com cancelamento de eco, supressão de ruído e ganho automático do navegador.
 
 **Câmera:** botão na barra da chamada; o vídeo aparece no lugar do avatar (o seu, espelhado). Captura em 720p 30 fps (~1,7 Mbps) com simulcast em 180p e 360p: o LiveKit manda a camada do tamanho em que cada um vê o vídeo (`adaptiveStream`) e para de enviar camadas que ninguém está vendo (`dynacast`). Codec VP8, leve na CPU. Ajustes finos no passo 9.
+
+**Compartilhar tela:** botão de monitor na barra abre o seletor do próprio app (abas Telas e Janelas, com miniaturas; a janela do Resenha não aparece). O main do Electron guarda a escolha por 15 s e entrega exatamente essa fonte quando o Chromium pede a captura (`setDisplayMediaRequestHandler`). Envia 1080p 30 fps (até ~5 Mbps) em VP8 com `contentHint: 'motion'`: com rede ruim cai a resolução antes de travar o movimento, bom para jogo e vídeo. A tela vira o palco e as pessoas ficam numa faixa embaixo; quem assiste pequeno ou com rede fraca recebe uma camada menor (simulcast). O áudio do computador é opcional (desmarcado por padrão): no Windows ele pega o som do sistema inteiro, inclusive as vozes da chamada, então use fone.
 
 | Rota | O que faz |
 |------|-----------|
