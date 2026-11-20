@@ -34,6 +34,14 @@ Status possíveis: `aberta` (ainda não bloqueia), `bloqueante` (trava um passo)
 - Enquanto isso: fiz a opção A.
 - Resposta:
 
+### D4 — Seletor de tela, áudio do computador e várias telas ao mesmo tempo (passo 8)
+- Status: aberta
+- Passo: 8
+- Contexto: o mockup mostra a tela compartilhada, mas não a janela de escolher tela/janela, nem o que acontece se duas pessoas compartilharem juntas. E o áudio do sistema no Windows (`loopback`) pega **todo** o som do computador, inclusive as vozes da chamada: quem compartilha com áudio sem fone faz os amigos ouvirem a si mesmos com atraso. Separar só o som de um programa exige módulo nativo (fica para depois).
+- Opções: A) janela "Compartilhar tela" com abas Telas/Janelas e miniaturas; caixinha "Compartilhar o áudio do computador" **desmarcada por padrão**, com aviso para usar fone; 1080p 30 fps; se várias pessoas compartilham, uma fica grande e as outras viram miniaturas "Tela de X" na faixa de baixo, clicáveis (recomendado) · B) áudio marcado por padrão, como o rótulo "com áudio" do mockup sugere · C) só uma pessoa compartilha por vez.
+- Enquanto isso: fiz a opção A. O mockup mostra "60 fps"; deixei 30 fps (60 fps em 1080p pesa na CPU de quem compartilha) e o ajuste fino vai para os presets do passo 9.
+- Resposta:
+
 _Respondidas no chat em 20/11/2026 ~06:10 (registradas abaixo em Resolvidas)._
 
 <!-- Modelo:
