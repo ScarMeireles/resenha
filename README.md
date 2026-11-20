@@ -94,7 +94,7 @@ resenha/
 - [x] **Passo 4 — Amigos:** pedidos, aceitar/recusar, status online (SignalR).
 - [x] **Passo 5 — Grupos e chat:** criar grupo, adicionar amigos, mensagens e imagens.
 - [x] **Passo 6 — Voz** na sala do grupo e ligação 1:1.
-- [ ] **Passo 7 — Câmera** e grade de vídeos.
+- [x] **Passo 7 — Câmera** e grade de vídeos.
 - [ ] **Passo 8 — Compartilhar tela** com seletor de janela/monitor e áudio do sistema.
 - [ ] **Passo 9 — Qualidade:** presets de bitrate, simulcast, supressão de ruído, seleção de microfone/fone.
 - [ ] **Passo 10 — Hospedagem real** na Oracle e teste com um amigo pela internet.
@@ -128,6 +128,8 @@ A API precisa da chave e do segredo do LiveKit para assinar os tokens de voz. Em
 
 **Voz e ligações:** `POST /groups/{id}/voice/token` (entrar na sala do grupo), `GET /groups/{id}/voice` (quem está na sala), `POST /calls/{amigoId}` (ligar) e `/accept`, `/decline`, `/cancel`, `/hangup`. O áudio é Opus mono a 48 kbps com DTX (não gasta banda no silêncio) e RED (redundância contra perda de pacote), com cancelamento de eco, supressão de ruído e ganho automático do navegador.
 
+**Câmera:** botão na barra da chamada; o vídeo aparece no lugar do avatar (o seu, espelhado). Captura em 720p 30 fps (~1,7 Mbps) com simulcast em 180p e 360p: o LiveKit manda a camada do tamanho em que cada um vê o vídeo (`adaptiveStream`) e para de enviar camadas que ninguém está vendo (`dynacast`). Codec VP8, leve na CPU. Ajustes finos no passo 9.
+
 | Rota | O que faz |
 |------|-----------|
 | `POST /auth/register` | Cria conta (`username`, `displayName`, `password`) e já devolve o token |
@@ -152,7 +154,7 @@ npm test          # testes do app (Vitest)
 npm run build     # confere os tipos e gera o app em apps/desktop/out
 ```
 
-O app procura a API em `http://localhost:5280`. Para outro endereço, copie `apps/desktop/.env.example` para `.env` e troque `VITE_API_URL`.
+O app procura a API em `http://localhost:5280`. Para outro endereço, copie `apps/desktop/.env.example` para `.env` e troque `VITE_API_URL` e, se o LiveKit não estiver em `ws://localhost:7880`, `VITE_LIVEKIT_URL` (igual ao `LiveKit:Url` da API; a política de segurança do app empacotado só deixa conectar nesses dois endereços).
 
 - **Login lembrado:** o token fica em `%APPDATA%\resenha-desktop\session.bin`, criptografado com a proteção da conta do Windows. Copiado para outro PC ou usuário, não abre.
 - **Segurança da janela:** a tela não acessa o Node nem o disco, só o que o preload expõe. No app compilado, uma política de conteúdo (CSP) só deixa carregar código do próprio app e falar com a API.

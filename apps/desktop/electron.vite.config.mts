@@ -2,19 +2,24 @@ import { resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'electron-vite'
 import type { Plugin } from 'vite'
+import { buildCsp } from './src/build/csp'
 
 const repoRoot = resolve(import.meta.dirname, '../..')
 
 export default defineConfig(({ mode }) => {
   // Endereço da API. Padrão: a API local do `dotnet run` (perfil http). Para trocar, crie apps/desktop/.env
   // a partir do .env.example. Não é segredo: o app instalado precisa saber onde a API está.
-  const apiUrl = (loadEnv(mode, import.meta.dirname).VITE_API_URL || 'http://localhost:5280').replace(/\/+$/, '')
+  const env = loadEnv(mode, import.meta.dirname)
+  const apiUrl = (env.VITE_API_URL || 'http://localhost:5280').replace(/\/+$/, '')
+  // Servidor de mídia: o endereço real vem da API junto com o token, mas a CSP precisa conhecê-lo no build.
+  // Deve ser o mesmo de LiveKit:Url no appsettings da API.
+  const livekitUrl = env.VITE_LIVEKIT_URL || 'ws://localhost:7880'
 
   return {
     main: {},
     preload: {},
     renderer: {
-      plugins: [react(), contentSecurityPolicy(apiUrl)],
+      plugins: [react(), contentSecurityPolicy(buildCsp(apiUrl, livekitUrl))],
       define: { 'import.meta.env.VITE_API_URL': JSON.stringify(apiUrl) },
       resolve: { alias: { '@shared': resolve(repoRoot, 'shared') } },
       // As regras de conta ficam em <repo>/shared, fora da pasta do app.
@@ -24,19 +29,10 @@ export default defineConfig(({ mode }) => {
 })
 
 /**
- * Política de segurança do conteúdo: a janela só carrega código do próprio app e só conversa com a API.
- * Vale no app empacotado. No `npm run dev` fica de fora porque o recarregamento ao vivo do React usa script inline.
+ * Injeta a política de segurança do conteúdo (regras em src/build/csp.ts). Vale no app empacotado.
+ * No `npm run dev` fica de fora porque o recarregamento ao vivo do React usa script inline.
  */
-function contentSecurityPolicy(apiUrl: string): Plugin {
-  const policy = [
-    "default-src 'self'",
-    "script-src 'self'",
-    "style-src 'self' 'unsafe-inline'",
-    "font-src 'self'",
-    `img-src 'self' data: blob: ${apiUrl}`,
-    `connect-src 'self' ${apiUrl}`,
-  ].join('; ')
-
+function contentSecurityPolicy(policy: string): Plugin {
   return {
     name: 'resenha-csp',
     apply: 'build',

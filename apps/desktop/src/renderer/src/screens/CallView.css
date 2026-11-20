@@ -1,4 +1,4 @@
-/* Tela da chamada (mockup): fundo escuro, grade de 3 colunas e barra de controles. */
+/* Tela da chamada (mockup): fundo escuro, grade responsiva de tiles 16:9 e barra de controles. */
 .call {
   display: flex;
   flex-direction: column;
@@ -36,15 +36,18 @@
   padding: 0;
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: 150px;
-  align-content: start;
+  /* Tiles de 240 a 480 px, centralizados: com 1–2 pessoas o vídeo não estica pela tela toda. */
+  grid-template-columns: repeat(auto-fit, minmax(240px, 480px));
+  justify-content: center;
+  align-content: center;
   gap: 12px;
   overflow-y: auto;
 }
 
 .call-tile {
   position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
   border-radius: 12px;
   background: #1b1f26;
   border: 1px solid var(--border);
@@ -92,3 +95,6 @@
 .call-btn--off:hover { background: #4a2326; }
 .call-btn--leave { width: 72px; background: #e5484d; color: #fff; }
 .call-btn--leave:hover { background: #ee5a5f; }
+
+.video-track { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.video-track--mirror { transform: scaleX(-1); }

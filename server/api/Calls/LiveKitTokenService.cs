@@ -26,7 +26,7 @@ public class LiveKitTokenService(IOptions<LiveKitOptions> options, TimeProvider 
                 [JwtRegisteredClaimNames.Sub] = userId.ToString(), // identity no LiveKit
                 [JwtRegisteredClaimNames.Jti] = Guid.NewGuid().ToString(),
                 ["name"] = displayName,
-                // Por enquanto só microfone; câmera e tela entram nos passos 7 e 8.
+                // Microfone e câmera liberados; a tela entra no passo 8.
                 ["video"] = new Dictionary<string, object>
                 {
                     ["room"] = room,
@@ -34,7 +34,7 @@ public class LiveKitTokenService(IOptions<LiveKitOptions> options, TimeProvider 
                     ["canPublish"] = true,
                     ["canSubscribe"] = true,
                     ["canPublishData"] = false,
-                    ["canPublishSources"] = new[] { "microphone" },
+                    ["canPublishSources"] = new[] { "microphone", "camera" },
                 },
             },
         });

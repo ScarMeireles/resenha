@@ -62,6 +62,7 @@ export function Shell({ user, token, notice, onSignOut }: Props) {
     <CallView crumbs={current.target.kind === 'direct' ? [current.target.friend.displayName] : [callLabel ?? 'Grupo', 'Sala de voz']}
       connecting={current.status === 'connecting'} participants={call.participants} resolve={resolveUser} connectedAt={call.connectedAt}
       prefs={call.prefs} onToggleMic={() => call.setMuted(!(call.prefs.muted || call.prefs.deafened))}
+      cameraOn={call.cameraOn} onToggleCamera={() => call.setCamera(!call.cameraOn)}
       onToggleDeafen={() => call.setDeafened(!call.prefs.deafened)} onLeave={call.leave} />
   ) : null
 

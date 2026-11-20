@@ -1,8 +1,9 @@
+import type { Track } from 'livekit-client'
 import { describe, expect, it } from 'vitest'
 import { formatDuration, micEnabled, toParticipantViews, type MicPrefs, type RawParticipant } from './voice'
 
 const raw = (identity: string, extra: Partial<RawParticipant> = {}): RawParticipant => ({
-  identity, isLocal: false, isSpeaking: false, isMicrophoneEnabled: true, ...extra,
+  identity, isLocal: false, isSpeaking: false, isMicrophoneEnabled: true, cameraTrack: null, ...extra,
 })
 
 describe('toParticipantViews', () => {
@@ -16,6 +17,13 @@ describe('toParticipantViews', () => {
     const [a, b] = toParticipantViews([raw('a', { isSpeaking: true }), raw('b', { isMicrophoneEnabled: false })])
     expect(a).toMatchObject({ isSpeaking: true, isMuted: false })
     expect(b).toMatchObject({ isSpeaking: false, isMuted: true })
+  })
+
+  it('repassa a câmera quando existe e null quando não', () => {
+    const track = {} as Track
+    const [a, b] = toParticipantViews([raw('a', { cameraTrack: track }), raw('b')])
+    expect(a.camera).toBe(track)
+    expect(b.camera).toBeNull()
   })
 
   it('lista vazia continua vazia', () => {

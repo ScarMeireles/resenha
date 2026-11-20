@@ -19,6 +19,7 @@ export function useCall(token: string) {
   // Sem chamada, mic/som guardam a preferência para a próxima.
   const [prefs, setPrefsState] = useState<MicPrefs>({ muted: false, deafened: false })
   const [viewing, setViewing] = useState(false)
+  const [cameraOn, setCameraOn] = useState(false) // não é preferência: começa desligada em toda chamada
   const [connectedAt, setConnectedAt] = useState<number | null>(null)
 
   const stateRef = useRef<CallState>(state)
@@ -36,6 +37,7 @@ export function useCall(token: string) {
     connRef.current?.disconnect()
     connRef.current = null
     setParticipants([])
+    setCameraOn(false)
   }, [])
 
   /** Sai da chamada atual, avisando a API quando é 1:1 (cancela se ainda estava chamando). */
@@ -165,6 +167,16 @@ export function useCall(token: string) {
   )
   const setDeafened = useCallback((deafened: boolean) => setPrefs({ ...prefsRef.current, deafened }), [setPrefs])
 
+  const setCamera = useCallback((on: boolean) => {
+    const conn = connRef.current
+    if (!conn) return
+    setCameraOn(on)
+    conn.setCamera(on).catch(() => {
+      setCameraOn(false)
+      dispatch({ type: 'notice', message: 'Não foi possível ligar a câmera.' })
+    })
+  }, [])
+
   const events: CallEvents = {
     callIncoming: ({ room, from }) => dispatch({ type: 'incoming', call: { room, from } }),
     callAccepted: ({ room }) => {
@@ -211,7 +223,7 @@ export function useCall(token: string) {
   hangUpRef.current = hangUp
   useEffect(() => () => hangUpRef.current(), [])
 
-  return { state, participants, prefs, viewing, setViewing, connectedAt, events, joinGroup, dial, accept, decline, leave, setMuted, setDeafened }
+  return { state, participants, prefs, viewing, setViewing, connectedAt, events, joinGroup, dial, accept, decline, leave, setMuted, setDeafened, cameraOn, setCamera }
 }
 
 export type CallApi = ReturnType<typeof useCall>
