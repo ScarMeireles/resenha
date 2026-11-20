@@ -11,6 +11,9 @@ import './Chat.css'
 
 interface Props {
   group: GroupDto
+  /** Já estou na chamada deste grupo? (muda o texto do botão do cabeçalho) */
+  inCall: boolean
+  onJoinCall(): void
   user: User
   chat: ChatState | undefined
   onLoad(): Promise<void>
@@ -25,7 +28,7 @@ const TOP_TRIGGER_PX = 80
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
 /** Cabeçalho, lista de mensagens e campo de envio do grupo. Use `key={group.id}` para zerar ao trocar de grupo. */
-export function ChatView({ group, user, chat, onLoad, onLoadOlder, onSend, onDelete }: Props) {
+export function ChatView({ group, user, chat, inCall, onJoinCall, onLoad, onLoadOlder, onSend, onDelete }: Props) {
   const listRef = useRef<HTMLDivElement>(null)
   const nearBottom = useRef(true)
   const loadingOlder = useRef(false)
@@ -91,7 +94,9 @@ export function ChatView({ group, user, chat, onLoad, onLoadOlder, onSend, onDel
         <HashIcon size={20} />
         <h2>conversa</h2>
         <span className="chat-count">· {memberCount} {memberCount === 1 ? 'membro' : 'membros'}</span>
-        <button className="pill-button" disabled title="Em breve"><PhoneIcon size={16} /> Entrar na chamada</button>
+        <button className="pill-button" onClick={onJoinCall}>
+          <PhoneIcon size={16} /> {inCall ? 'Voltar à chamada' : 'Entrar na chamada'}
+        </button>
       </header>
 
       <div className="chat-list" ref={listRef} onScroll={onScroll}>

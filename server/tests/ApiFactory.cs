@@ -25,6 +25,9 @@ public class ApiFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.UseSetting("Storage:Root", DataRoot);
         builder.UseSetting("Jwt:SigningKey", "chave-de-teste-com-mais-de-32-caracteres-123456");
+        builder.UseSetting("LiveKit:Url", TestLiveKit.Url);
+        builder.UseSetting("LiveKit:ApiKey", TestLiveKit.ApiKey);
+        builder.UseSetting("LiveKit:ApiSecret", TestLiveKit.ApiSecret);
         builder.UseSetting("RateLimit:AuthPerMinute", AuthPerMinute.ToString());
         builder.UseSetting("RateLimit:FriendRequestsPerMinute", FriendRequestsPerMinute.ToString());
         builder.UseSetting("RateLimit:MessagesPerMinute", MessagesPerMinute.ToString());
@@ -50,4 +53,12 @@ public class ApiFactory : WebApplicationFactory<Program>
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.Token);
         return (client, auth);
     }
+}
+
+/// <summary>Valores fixos do LiveKit nos testes (não dependem do infra/.env).</summary>
+public static class TestLiveKit
+{
+    public const string Url = "ws://livekit.teste:7880";
+    public const string ApiKey = "APIteste123";
+    public const string ApiSecret = "segredo-de-teste-do-livekit-com-mais-de-32-caracteres";
 }

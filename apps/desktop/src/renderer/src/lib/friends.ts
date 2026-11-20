@@ -2,7 +2,7 @@ import { request, type User } from './api'
 
 /** Tipos e chamadas de amigos. Espelham server/api (FriendDto, FriendRequestDto). */
 
-export type FriendPresence = 'online' | 'offline'
+export type FriendPresence = 'online' | 'offline' | 'in-call'
 
 export interface FriendDto {
   user: User
@@ -98,10 +98,13 @@ export function friendsReducer(state: FriendsState, action: FriendsAction): Frie
   }
 }
 
-/** Online primeiro; dentro de cada grupo, por nome (pt-BR). */
+/** Conectado (online ou em chamada), ou seja, não offline. */
+export const isOnline = (presence: FriendPresence): boolean => presence !== 'offline'
+
+/** Conectados primeiro; dentro de cada grupo, por nome (pt-BR). */
 export function sortFriends(friends: FriendDto[]): FriendDto[] {
   return [...friends].sort((a, b) => {
-    if (a.presence !== b.presence) return a.presence === 'online' ? -1 : 1
+    if (isOnline(a.presence) !== isOnline(b.presence)) return isOnline(a.presence) ? -1 : 1
     return a.user.displayName.localeCompare(b.user.displayName, 'pt-BR')
   })
 }

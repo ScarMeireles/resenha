@@ -14,6 +14,7 @@ public class GroupNotifier(IHubContext<AppHub> hub, PresenceTracker presence)
     public const string GroupRemoved = "groupRemoved";
     public const string MessageCreated = "messageCreated";
     public const string MessageDeleted = "messageDeleted";
+    public const string VoiceParticipants = "voiceParticipants";
 
     public static string HubGroup(Guid groupId) => $"group:{groupId}";
 
@@ -42,4 +43,8 @@ public class GroupNotifier(IHubContext<AppHub> hub, PresenceTracker presence)
 
     public Task Message(MessageDto message) =>
         hub.Clients.Group(HubGroup(message.GroupId)).SendAsync(MessageCreated, message);
+
+    /// <summary>Avisa os membros conectados quem está na sala de voz do grupo agora.</summary>
+    public Task VoiceChanged(Guid groupId, IReadOnlyCollection<Guid> userIds) =>
+        hub.Clients.Group(HubGroup(groupId)).SendAsync(VoiceParticipants, new { groupId, userIds });
 }

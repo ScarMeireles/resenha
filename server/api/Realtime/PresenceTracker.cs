@@ -1,14 +1,16 @@
+using Resenha.Api.Calls;
+
 namespace Resenha.Api.Realtime;
 
 /// <summary>
 /// Quem está online agora, em memória (um servidor só, suficiente para amigos).
 /// Uma pessoa pode ter vários aparelhos conectados: só conta como offline quando a última conexão cai.
 /// </summary>
-public class PresenceTracker
+public class PresenceTracker(VoiceTracker voice)
 {
     public const string Online = "online";
     public const string Offline = "offline";
-    // O estado "in-call" entra no passo 6 (chamadas).
+    public const string InCall = "in-call";
 
     private readonly Dictionary<Guid, HashSet<string>> _connections = [];
     private readonly object _lock = new();
@@ -53,5 +55,7 @@ public class PresenceTracker
         get { lock (_lock) return _connections.Keys.ToHashSet(); }
     }
 
-    public string PresenceOf(Guid userId) => IsOnline(userId) ? Online : Offline;
+    /// <summary>Offline, online ou em chamada (só conta como em chamada quem está online).</summary>
+    public string PresenceOf(Guid userId) =>
+        !IsOnline(userId) ? Offline : voice.IsInCall(userId) ? InCall : Online;
 }

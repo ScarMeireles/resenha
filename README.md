@@ -93,7 +93,7 @@ resenha/
 - [x] **Passo 3 — App Electron** com o layout dos mockups e telas de criar conta/entrar.
 - [x] **Passo 4 — Amigos:** pedidos, aceitar/recusar, status online (SignalR).
 - [x] **Passo 5 — Grupos e chat:** criar grupo, adicionar amigos, mensagens e imagens.
-- [ ] **Passo 6 — Voz** na sala do grupo e ligação 1:1.
+- [x] **Passo 6 — Voz** na sala do grupo e ligação 1:1.
 - [ ] **Passo 7 — Câmera** e grade de vídeos.
 - [ ] **Passo 8 — Compartilhar tela** com seletor de janela/monitor e áudio do sistema.
 - [ ] **Passo 9 — Qualidade:** presets de bitrate, simulcast, supressão de ruído, seleção de microfone/fone.
@@ -123,6 +123,10 @@ dotnet test server                                 # roda todos os testes
 ```
 
 O banco SQLite e as imagens ficam em `server/api/.data/`, que não vai para o Git.
+
+A API precisa da chave e do segredo do LiveKit para assinar os tokens de voz. Em desenvolvimento ela lê sozinha o `infra/.env` (o mesmo do Docker); fora dele, use as variáveis `LIVEKIT_API_KEY` e `LIVEKIT_API_SECRET`. Sem eles a API não sobe. O LiveKit avisa a API de quem entrou ou saiu das salas pelo webhook `POST /livekit/webhook` (configurado em `infra/livekit.yaml`).
+
+**Voz e ligações:** `POST /groups/{id}/voice/token` (entrar na sala do grupo), `GET /groups/{id}/voice` (quem está na sala), `POST /calls/{amigoId}` (ligar) e `/accept`, `/decline`, `/cancel`, `/hangup`. O áudio é Opus mono a 48 kbps com DTX (não gasta banda no silêncio) e RED (redundância contra perda de pacote), com cancelamento de eco, supressão de ruído e ganho automático do navegador.
 
 | Rota | O que faz |
 |------|-----------|

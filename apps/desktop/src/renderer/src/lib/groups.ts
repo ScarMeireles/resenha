@@ -4,7 +4,7 @@ import { request, type User } from './api'
 
 export { initialsOf as initials } from './avatar'
 
-export type MemberPresence = 'online' | 'offline'
+export type MemberPresence = 'online' | 'offline' | 'in-call'
 
 export const MAX_GROUP_MEMBERS = 10
 export const MAX_GROUP_NAME = 40
@@ -45,10 +45,46 @@ export interface MessageDto {
   deleted: boolean
 }
 
+/** Resposta dos endpoints que liberam entrada numa sala de voz. */
+export interface VoiceCredentialsDto {
+  url: string
+  token: string
+  room: string
+}
+
+/** Quem está na sala de voz de cada grupo (id do grupo → ids dos usuários). */
+export type VoiceState = Record<string, string[]>
+
+export function voiceReducer(state: VoiceState, action: { groupId: string; userIds: string[] }): VoiceState {
+  if (action.userIds.length === 0) {
+    const { [action.groupId]: _removed, ...rest } = state
+    return rest
+  }
+  return { ...state, [action.groupId]: action.userIds }
+}
+
+/**
+ * Recarrega a sala de voz de cada grupo da lista (usado depois de reconectar o SignalR, quando eventos podem ter sido perdidos).
+ * Falha de rede em um grupo não atrapalha os outros: o próximo resync tenta de novo.
+ */
+export async function reloadVoice(
+  token: string, groupIds: Iterable<string>, apply: (groupId: string, userIds: string[]) => void,
+): Promise<void> {
+  await Promise.allSettled(
+    [...groupIds].map(async (groupId) => apply(groupId, (await groupsApi.getVoice(token, groupId)).userIds)),
+  )
+}
+
 const enc = encodeURIComponent
 
 export const groupsApi = {
   getGroups: (token: string) => request<GroupDto[]>('GET', '/groups', { token }),
+
+  /** Quem está na sala de voz do grupo agora. */
+  getVoice: (token: string, id: string) => request<{ userIds: string[] }>('GET', `/groups/${enc(id)}/voice`, { token }),
+
+  /** Credenciais do LiveKit para entrar na sala de voz do grupo. */
+  voiceToken: (token: string, id: string) => request<VoiceCredentialsDto>('POST', `/groups/${enc(id)}/voice/token`, { token }),
 
   getGroup: (token: string, id: string) => request<GroupDto>('GET', `/groups/${enc(id)}`, { token }),
 
