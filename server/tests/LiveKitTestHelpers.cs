@@ -81,6 +81,12 @@ public static class LiveKitTestHelpers
     public static async Task StartAndWait(ApiFactory factory, HubConnection connection, Guid userId)
     {
         await connection.StartAsync();
+        await WaitConnected(factory, userId);
+    }
+
+    /// <summary>Espera o servidor terminar de registrar a conexão já iniciada (ver StartAndWait).</summary>
+    public static async Task WaitConnected(ApiFactory factory, Guid userId)
+    {
         var presence = factory.Services.GetRequiredService<PresenceTracker>();
         var deadline = DateTime.UtcNow + Timeout;
         while (!presence.IsConnected(userId))

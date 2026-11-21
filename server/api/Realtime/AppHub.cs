@@ -8,19 +8,23 @@ namespace Resenha.Api.Realtime;
 
 /// <summary>Canal de tempo real do app (/hubs/app). Só o servidor envia eventos; o cliente não chama métodos.</summary>
 [Authorize]
-public class AppHub(PresenceTracker presence, PresenceNotifier presenceNotifier, AppDbContext db) : Hub
+public class AppHub(PresenceTracker presence, PresenceNotifier presenceNotifier, GroupNotifier groupNotifier, AppDbContext db) : Hub
 {
     public override async Task OnConnectedAsync()
     {
         var userId = Context.User!.GetUserId();
 
-        // Entra nos grupos do SignalR de todos os grupos da pessoa, para receber as mensagens deles.
-        var groupIds = await db.GroupMembers.Where(m => m.UserId == userId).Select(m => m.GroupId).ToListAsync();
-        foreach (var groupId in groupIds)
-            await Groups.AddToGroupAsync(Context.ConnectionId, GroupNotifier.HubGroup(groupId));
-
         var chosen = await db.Users.Where(u => u.Id == userId).Select(u => u.Status).FirstOrDefaultAsync() ?? UserStatuses.Online;
-        if (presence.Connected(userId, Context.ConnectionId, chosen) && presence.PresenceOf(userId) is var shown && shown != PresenceTracker.Offline)
+
+        // Entra nos grupos do SignalR de todos os grupos da pessoa (para receber as mensagens deles) e registra a
+        // conexão. Os dois passos andam juntos na trava do GroupNotifier para não brigar com adição/remoção de membro
+        // (o cliente recebe o "conectado" do SignalR antes de este método terminar).
+        var first = await groupNotifier.Connecting(
+            Context.ConnectionId,
+            () => db.GroupMembers.Where(m => m.UserId == userId).Select(m => m.GroupId).ToListAsync(),
+            () => presence.Connected(userId, Context.ConnectionId, chosen));
+
+        if (first && presence.PresenceOf(userId) is var shown && shown != PresenceTracker.Offline)
             await presenceNotifier.Notify(userId, shown); // invisível não avisa ninguém: para os outros, segue offline
         await base.OnConnectedAsync();
     }

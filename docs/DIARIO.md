@@ -4,6 +4,9 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (bug: removido do grupo ainda recebia mensagens, branch `feature/corrige-remocao-grupo`)
+- Bug do servidor, não só do teste: o SignalR libera o cliente antes do `OnConnectedAsync`; se a remoção caía no meio (conexão já leu "é membro" no banco, mas ainda não estava registrada), ela entrava no grupo depois e o ex-membro seguia recebendo as mensagens. Agora entrada nos grupos + registro da conexão e adição/remoção de membro passam pela mesma trava do `GroupNotifier`, e `groupRemoved` só sai depois de todas as conexões deixarem o grupo (vale para sair, ser removido e grupo apagado). DMs não usam grupo do SignalR (vão para os dois participantes fixos), então não há ex-participante. Testes de tempo real esperam a conexão ficar pronta em vez de `Task.Delay`; loop 20/20 nos `RealtimeTests` e na suíte completa.
+
 ## 20/11/2026 — sessão interativa (API de DM e troca do @, branch `feature/api-dm-e-arroba`)
 - Só servidor (a tela espera os modelos). `PUT /me/username` (token novo; o antigo segue valendo) e mensagens diretas em `/dms`, na mesma tabela `Messages` do grupo (coluna `ConversationId` + tabela `DirectConversations`, migração `ConversasDiretas`). O código comum de enviar/paginar/apagar saiu de `GroupEndpoints` para `Chat/ChatMessages.cs`. Testes: 174 ok (24 novos). Sem merge.
 
