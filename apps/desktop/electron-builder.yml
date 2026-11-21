@@ -23,9 +23,14 @@ win:
   # Sem assinatura digital: certificado custa dinheiro. O Windows mostra o aviso do SmartScreen na primeira vez.
   signAndEditExecutable: true
 nsis:
-  # Instala só para o usuário atual, sem pedir administrador, como o Discord.
-  oneClick: true
+  # Assistente de instalação (não é mais "um clique"): o usuário pode escolher a pasta.
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  # Por padrão instala só para o usuário atual, sem pedir administrador.
   perMachine: false
+  # Mantido no padrão (true): o Windows só pede administrador se a pasta escolhida exigir.
+  allowElevation: true
+  # O appId (no topo do arquivo) é o que faz o instalador novo reconhecer e substituir a instalação antiga.
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Resenha
