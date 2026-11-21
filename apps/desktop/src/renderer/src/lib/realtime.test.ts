@@ -13,7 +13,8 @@ describe('hubConnectionOptions', () => {
 
 describe('bindHandlers', () => {
   const names = [
-    'voiceParticipants', 'callIncoming', 'callAccepted', 'callDeclined', 'callCancelled', 'callEnded', 'presenceChanged',
+    'voiceParticipants', 'callIncoming', 'callAccepted', 'callDeclined', 'callCancelled', 'callEnded', 'presenceChanged', 'userUpdated',
+    'directMessageCreated', 'directMessageDeleted',
   ] as const
 
   function setup() {

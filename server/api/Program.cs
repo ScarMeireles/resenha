@@ -10,6 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using Resenha.Api.Accounts;
 using Resenha.Api.Auth;
 using Resenha.Api.Calls;
+using Resenha.Api.Chat;
 using Resenha.Api.Data;
 using Resenha.Api.Friends;
 using Resenha.Api.Groups;
@@ -51,11 +52,13 @@ builder.Services.AddSingleton<Microsoft.AspNetCore.SignalR.IUserIdProvider, SubU
 builder.Services.AddSingleton<PresenceTracker>();
 builder.Services.AddSingleton<FriendNotifier>();
 builder.Services.AddSingleton<GroupNotifier>();
+builder.Services.AddSingleton<DirectMessageNotifier>();
 builder.Services.AddSingleton<VoiceTracker>();
 builder.Services.AddSingleton<CallTracker>();
 builder.Services.AddSingleton<CallNotifier>();
 builder.Services.AddSingleton<LiveKitTokenService>();
 builder.Services.AddScoped<PresenceNotifier>();
+builder.Services.AddScoped<UserNotifier>();
 
 // --- LiveKit (voz): sem chave/segredo a API nem sobe, com mensagem clara
 builder.Services.AddOptions<LiveKitOptions>()
@@ -132,8 +135,8 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy(FriendEndpoints.RequestRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
         FriendEndpoints.RateLimitKey(http),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = friendRequestsPerMinute, Window = TimeSpan.FromMinutes(1) }));
-    // Mensagens do chat: por usuário logado.
-    options.AddPolicy(GroupEndpoints.MessageRateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
+    // Mensagens do chat (grupos e DMs, mesmo balde): por usuário logado.
+    options.AddPolicy(ChatMessages.RateLimitPolicy, http => RateLimitPartition.GetFixedWindowLimiter(
         FriendEndpoints.RateLimitKey(http),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = messagesPerMinute, Window = TimeSpan.FromMinutes(1) }));
     // Ligações 1:1: por usuário logado.
@@ -169,6 +172,7 @@ app.MapAuthEndpoints();
 app.MapAccountEndpoints();
 app.MapFriendEndpoints();
 app.MapGroupEndpoints();
+app.MapDirectMessageEndpoints();
 app.MapVoiceEndpoints();
 app.MapCallEndpoints();
 app.MapStatusEndpoints();

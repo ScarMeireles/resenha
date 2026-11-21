@@ -4,8 +4,23 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 - controles da transmissão (branch feature/controles-transmissao)
+- Caixinha do botão da tela (qualidade aplicada na hora e salva como padrão, "Som da tela", trocar fonte com replaceTrack, parar), barra de quem assiste (volume 0-200% por pessoa, AO VIVO, janela separada, tela cheia), menu do botão direito com volume da voz por pessoa e janela separada (window.open about:blank + portal, alfinete "sempre por cima"). Áudio recebido via webAudioMix do LiveKit (GainNode). Testes: app 202; build OK; janela separada conferida no app empacotado por CDP (CSP, estilos, vídeo, alfinete, nomes negados). Sem teste com duas pessoas: a API local que estava no ar é de outra branch (pede versão 0.1.1). Sem merge.
+
+## 20/11/2026 — sessão interativa (tela de mensagens diretas, branch `feature/tela-dms`)
+- App: seção "Mensagens diretas" no Início ("+" abre a lista de amigos, prévia, não lidas locais em `localStorage`, mais recente em cima), botão "Mensagem" na lista de amigos, tela da conversa reaproveitando o `ChatView` (o reducer de mensagens virou genérico por `chatId`), ligar pelo cabeçalho, intro e aviso de só leitura para ex-amigos. Tempo real com `directMessageCreated`/`directMessageDeleted` e `canSend` por `friendAdded`/`friendRemoved`; badge de não lidas também no botão do Início quando se está num grupo. Lógica em `lib/dms.ts` com testes. Conferido no Electron com a API local (receber, abrir, enviar, só leitura, voltar a ser amigos, apagar, "+"). Depois juntei `hml` (cartão de perfil) e as DMs também tratam `userUpdated`. Sem merge em `hml`.
+
+## 20/11/2026 — sessão interativa (cartão de perfil e userUpdated, branch `feature/cartao-perfil`)
+- Clicar na própria foto abre o cartão de perfil (banner, foto, nome e @ editáveis, bolinha de status com menu Online/Ausente/Offline, "Áudio e vídeo"); "Ausente" virou lua amarela em todo avatar. Novo evento `userUpdated` (amigos, colegas de grupo, quem tem DM e as outras janelas; estranho não recebe) atualiza amigos, pedidos, membros e mensagens; na troca de @ o token novo vai para a sessão salva. Testes: API 177, app 190; conferido no Electron por CDP. Sem merge.
+
+## 20/11/2026 — sessão interativa (API de DM e troca do @, branch `feature/api-dm-e-arroba`)
+- Só servidor (a tela espera os modelos). `PUT /me/username` (token novo; o antigo segue valendo) e mensagens diretas em `/dms`, na mesma tabela `Messages` do grupo (coluna `ConversationId` + tabela `DirectConversations`, migração `ConversasDiretas`). O código comum de enviar/paginar/apagar saiu de `GroupEndpoints` para `Chat/ChatMessages.cs`. Testes: 174 ok (24 novos). Sem merge.
+
+## 20/11/2026 — sessão interativa (instalador com escolha de pasta)
+- electron-builder.yml: NSIS virou assistente (oneClick false, allowToChangeInstallationDirectory true), mesmo appId, perMachine false. README explica como atualizar. Branch `feature/instalador-pasta`, com merge em `hml`.
+
 ## 20/11/2026 — sessão interativa (bug: voltar ao chat do grupo durante a chamada)
-- Canal "conversa" da barra do grupo não tinha clique; agora mostra o chat sem derrubar a chamada (a sala vive no `useCall`) e a "Sala de voz" volta para a chamada. Destaque do canal segue o que está na tela; regra da tela da chamada extraída para `showsCallScreen` com testes. Branch `feature/corrige-voltar-chat`, sem merge.
+- Canal "conversa" da barra do grupo não tinha clique; agora mostra o chat sem derrubar a chamada (a sala vive no `useCall`) e a "Sala de voz" volta para a chamada. Destaque do canal segue o que está na tela; regra da tela da chamada extraída para `showsCallScreen` com testes. Branch `feature/corrige-voltar-chat`, com merge em `hml`.
 
 ## 20/11/2026 22:13 — execução automática (resenha-continuar)
 - Árvore limpa em `hml` e nenhuma dúvida respondida para aplicar. Uso: 2% (5 h) e 46% (semanal).
@@ -152,9 +167,3 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 - Próxima execução: revisar `git status`, commitar o passo 3, merge em `hml` e seguir para o passo 4. O README já marca o passo 3 como feito.
 - Sem dúvidas abertas. Fazer R4 (@ disponível em tempo real). Respostas R1–R4 em `docs/DUVIDAS.md`.
 - Observação: ao rodar o Electron a partir do Claude, remova `ELECTRON_RUN_AS_NODE` do ambiente e use `--no-sandbox` só para teste; feche a janela com `window.close()` (matar o processo à força perde a chave do `safeStorage`).
-
-## 20/11/2026 - instalador com escolha de pasta
-- electron-builder.yml: NSIS virou assistente (oneClick false, allowToChangeInstallationDirectory true), mesmo appId, perMachine false. README explica como atualizar. Branch feature/instalador-pasta.
-
-## 20/11/2026 - controles da transmissão (branch feature/controles-transmissao)
-- Caixinha do botão da tela (qualidade aplicada na hora e salva como padrão, "Som da tela", trocar fonte com replaceTrack, parar), barra de quem assiste (volume 0-200% por pessoa, AO VIVO, janela separada, tela cheia), menu do botão direito com volume da voz por pessoa e janela separada (window.open about:blank + portal, alfinete "sempre por cima"). Áudio recebido via webAudioMix do LiveKit (GainNode). Testes: app 202; build OK; janela separada conferida no app empacotado por CDP (CSP, estilos, vídeo, alfinete, nomes negados). Sem teste com duas pessoas: a API local que estava no ar é de outra branch (pede versão 0.1.1). Sem merge.

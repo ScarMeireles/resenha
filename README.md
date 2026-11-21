@@ -143,6 +143,10 @@ A API precisa da chave e do segredo do LiveKit para assinar os tokens de voz. Em
 
 **Status e chamadas perdidas:** clicar no próprio avatar (rodapé da barra lateral) escolhe Online, Ausente ou Offline (`GET`/`PUT /me/status`). "Offline" é invisível: os outros veem offline, mas o app segue conectado e as ligações tocam. O status escolhido não vai no `UserDto`, para ninguém descobrir quem está invisível. Dá para ligar para quem aparece offline; se o app da pessoa estiver fechado, quem liga vê "Fulano não está disponível" e ela recebe um aviso de chamada perdida ao entrar (`GET`/`DELETE /calls/missed`).
 
+**Mensagens diretas:** conversa 1:1 entre amigos, com as mesmas regras do chat de grupo (texto até 2000 caracteres, até 4 imagens, cada um apaga a própria mensagem, que vira "mensagem apagada"). Só amigos abrem conversa e enviam. Se a amizade acabar, o histórico continua visível, só para leitura (`canSend: false`), até voltarem a ser amigos. As mensagens ficam na mesma tabela do chat de grupo, ligadas a uma conversa (`DirectConversations`, uma por par de pessoas). Rotas: `GET /dms` (conversas com mensagem, mais recente primeiro, com a última mensagem), `POST /dms` (`{ userId }`: abre ou devolve a conversa com o amigo), `GET /dms/{id}`, `GET /dms/{id}/messages?before=&limit=` (paginação igual à do grupo), `POST /dms/{id}/messages` (multipart `text` + `images`) e `DELETE /dms/{id}/messages/{messageId}`. Quem não participa recebe 404. Tempo real: `directMessageCreated` (a mensagem) e `directMessageDeleted` (`{ conversationId, messageId }`), só para os dois da conversa. No app, as conversas ficam na barra lateral do Início ("Mensagens diretas", com "+" para escolher um amigo), a mais recente em cima, com prévia e contador de não lidas. As não lidas são controladas só no cliente (zeram ao abrir e ficam salvas no próprio computador; o que chega com o app fechado conta pelo menos 1). A tela da conversa reaproveita o chat do grupo e liga para a pessoa pelo cabeçalho.
+
+**Trocar o próprio @:** `PUT /me/username` (`{ username }`), livre e sem limite. Valida igual ao cadastro, responde 409 se o @ estiver em uso e o antigo fica livre na hora. Devolve um token novo com o @ atualizado (o antigo continua valendo, porque a sessão é pelo Id da conta). Amigos, grupos e mensagens são ligados ao Id, então nada se perde.
+
 **Câmera:** botão na barra da chamada; o vídeo aparece no lugar do avatar (o seu, espelhado). Captura em 720p 30 fps (~1,7 Mbps) com simulcast em 180p e 360p: o LiveKit manda a camada do tamanho em que cada um vê o vídeo (`adaptiveStream`) e para de enviar camadas que ninguém está vendo (`dynacast`). Codec VP8, leve na CPU. Ajustes finos no passo 9.
 
 **Compartilhar tela:** botão de monitor na barra abre o seletor do próprio app (abas Telas e Janelas, com miniaturas; a janela do Resenha não aparece). O main do Electron guarda a escolha por 15 s e entrega exatamente essa fonte quando o Chromium pede a captura (`setDisplayMediaRequestHandler`). Envia 1080p 30 fps (até ~5 Mbps) em VP8 com `contentHint: 'motion'`: com rede ruim cai a resolução antes de travar o movimento, bom para jogo e vídeo. A tela vira o palco e as pessoas ficam numa faixa embaixo; quem assiste pequeno ou com rede fraca recebe uma camada menor (simulcast). O som tem três opções (a última escolha fica salva):
@@ -160,7 +164,10 @@ O som da tela sai em Opus **estéreo** (jogo, filme e música usam os dois lados
 | `GET /me` · `PATCH /me` | Ver a própria conta · trocar o nome |
 | `PUT /me/avatar` · `DELETE /me/avatar` | Enviar (campo `file`) ou remover a foto. Vira WebP 256×256 |
 | `PUT /me/banner` · `DELETE /me/banner` | Enviar ou remover o banner. Vira WebP 960×320 |
+| `PUT /me/username` | Trocar o próprio @ (`username`). Devolve token novo e a conta |
 | `GET /users/{username}` | Perfil público de alguém |
+| `GET /dms` · `POST /dms` | Minhas conversas diretas · abrir a conversa com um amigo (`userId`) |
+| `GET /dms/{id}/messages` · `POST /dms/{id}/messages` · `DELETE /dms/{id}/messages/{messageId}` | Ler (paginado), enviar e apagar mensagens da DM |
 
 Imagens: JPG, PNG, GIF ou WebP de até 10 MB e 4096 px de lado; GIFs/WebPs animados continuam animados (até 300 quadros). Cadastro e login aceitam 10 tentativas por minuto por IP.
 

@@ -98,3 +98,8 @@ export const PopinIcon = (p: P) => (
   <Icon {...p}><rect x="3" y="3" width="18" height="18" rx="2" /><rect x="12" y="12" width="6" height="5" rx="1" fill="currentColor" /></Icon>
 )
 export const PinIcon = (p: P) => <Icon {...p}><path d="M12 17v5M9 3h6l-1 7 4 4H6l4-4z" /></Icon>
+export const ImageIcon = (p: P) => (
+  <Icon {...p}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></Icon>
+)
+/** Lua cheia (preenchida): o indicador de "Ausente". */
+export const MoonIcon = (p: P) => <Icon {...p}><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" fill="currentColor" /></Icon>

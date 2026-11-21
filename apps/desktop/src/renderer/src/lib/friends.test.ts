@@ -51,6 +51,16 @@ describe('friendsReducer', () => {
     const s = friendsReducer(s0, { type: 'presenceChanged', userId: 'b', presence: 'online' })
     expect(s.friends.map((f) => f.presence)).toEqual(['offline', 'online'])
   })
+
+  it('userUpdated troca os dados da pessoa em amigos e pedidos, mantendo a presença', () => {
+    const s0: FriendsState = { friends: [friend('a', 'online'), friend('b')], incoming: [req('r1', 'a')], outgoing: [req('r2', 'c')] }
+    const renamed = { ...user('a', 'Nome Novo'), username: 'novo' }
+    const s = friendsReducer(s0, { type: 'userUpdated', user: renamed })
+    expect(s.friends[0]).toEqual({ ...s0.friends[0], user: renamed })
+    expect(s.friends[1]).toBe(s0.friends[1])
+    expect(s.incoming[0].user).toEqual(renamed)
+    expect(s.outgoing).toBe(s0.outgoing)
+  })
 })
 
 describe('sortFriends', () => {
