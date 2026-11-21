@@ -22,6 +22,11 @@ Status possíveis: `aberta` (ainda não bloqueia), `bloqueante` (trava um passo)
 
 ## Resolvidas
 
+### R13 — Atualização obrigatória
+- Decidido no chat em 20/11/2026: toda versão nova é obrigatória. Qualquer app com versão menor que a mais nova publicada no servidor é bloqueado (a API responde 426).
+- Ao abrir, o app baixa e instala sozinho, sem perguntar, mostrando só a tela "Atualizando…" com barra de progresso no estilo do app, e reabre. Se der erro (servidor fora, download falhou), mostra a mensagem e "Tentar de novo".
+- As atualizações saem do próprio servidor (pasta fora do Git servida em `/updates`), publicadas com `npm run release:local`. A primeira instalação com esse sistema é manual; depois é automático. Guia em `docs/HOSPEDAGEM.md` (seção 5).
+
 ### R12 — Melhorias de 20/11 (troca de @, DMs, volume)
 - Respondido no chat em 20/11/2026: trocar o próprio @ é livre, a qualquer hora, e o @ antigo fica livre na hora. Mensagens diretas só entre amigos; se deixarem de ser amigos, o histórico fica visível só para leitura. DMs com as mesmas regras do chat de grupo (até 4 imagens, apagar a própria vira "mensagem apagada"). Quem assiste regula o volume da transmissão e da voz de cada pessoa (ajuste salvo só no PC dele).
 - Modelos aprovados em 20/11/2026 (https://claude.ai/artifact/RcQLgx5B4XCcsNj6e8MrmB): clicar na própria foto abre o cartão de perfil (banner, foto, nome, @), status pela bolinha da foto e "Ausente" vira lua amarela. Qualidade escolhida na caixinha do compartilhamento vale para o atual e vira o padrão salvo. Volume da transmissão e da voz até 200%, lembrado por pessoa. Janela separada da transmissão é normal, com alfinete para fixar "sempre por cima". DMs na barra lateral do Início, com "+" que abre a lista de amigos.

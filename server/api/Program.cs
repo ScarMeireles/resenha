@@ -16,6 +16,7 @@ using Resenha.Api.Friends;
 using Resenha.Api.Groups;
 using Resenha.Api.Media;
 using Resenha.Api.Realtime;
+using Resenha.Api.Updates;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,12 +38,18 @@ builder.Configuration.AddInMemoryCollection(livekitFallback);
 var dataRoot = Path.GetFullPath(builder.Configuration["Storage:Root"] ?? ".data", builder.Environment.ContentRootPath);
 var mediaRoot = Path.Combine(dataRoot, "media");
 Directory.CreateDirectory(mediaRoot);
+// Atualizações do app (latest.yml + instalador): {Updates:Path}, padrão {Storage:Root}/updates. No servidor real é a
+// pasta deploy/updates (ou RESENHA_UPDATES_DIR), montada no contêiner. Vazia = nenhuma versão publicada, nada é bloqueado.
+var updatesRoot = Path.GetFullPath(builder.Configuration["Updates:Path"] ?? Path.Combine(dataRoot, "updates"), builder.Environment.ContentRootPath);
+Directory.CreateDirectory(updatesRoot);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite($"Data Source={Path.Combine(dataRoot, "resenha.db")}"));
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(new MediaStorage(mediaRoot));
+builder.Services.AddSingleton(new UpdatesFolder(updatesRoot));
+builder.Services.AddSingleton<PublishedVersion>();
 builder.Services.AddSingleton<ImageProcessor>();
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
@@ -162,12 +169,17 @@ app.UseStaticFiles(new StaticFileOptions
     OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable",
 });
 
+// Instalador e latest.yml do app: /updates/latest.yml, /updates/Resenha-Setup-x.exe. Sem login e sem listar a pasta.
+app.UseUpdateFiles();
+
 app.UseCors();
+app.UseRequiredAppVersion(); // app mais velho que a versão publicada recebe 426 (exceto /updates, /version, /health...)
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
 app.MapGet("/health", () => Results.Ok("ok"));
+app.MapUpdateEndpoints();
 app.MapAuthEndpoints();
 app.MapAccountEndpoints();
 app.MapFriendEndpoints();

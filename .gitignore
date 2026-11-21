@@ -35,3 +35,6 @@ Thumbs.db
 
 # Ajudante de áudio publicado (gerado por npm run build:audio)
 apps/desktop/resources/audio/
+
+# Atualizações publicadas do app (latest.yml + instalador), servidas pela API
+deploy/updates/

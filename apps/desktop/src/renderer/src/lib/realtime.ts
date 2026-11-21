@@ -1,5 +1,6 @@
 import { HubConnectionBuilder, LogLevel, type IHttpConnectionOptions } from '@microsoft/signalr'
 import { apiUrl, type User } from './api'
+import { notifyUpgradeRequired, UPGRADE_REQUIRED, withVersionQuery } from './appVersion'
 import type { FriendDto, FriendRequestDto } from './friends'
 import type { Presence } from './presence'
 import type { GroupDto, MessageDto } from './groups'
@@ -98,11 +99,20 @@ export function createLifecycle(connection: { start(): Promise<void>; stop(): Pr
 
 export function createRealtime(token: string, handlers: RealtimeHandlers): Realtime {
   const connection = new HubConnectionBuilder()
-    .withUrl(`${apiUrl}/hubs/app`, hubConnectionOptions(token))
+    .withUrl(withVersionQuery(`${apiUrl}/hubs/app`), hubConnectionOptions(token))
     .withAutomaticReconnect()
     .configureLogging(LogLevel.Warning)
     .build()
 
   bindHandlers(connection, handlers)
-  return createLifecycle(connection, () => handlers.resync())
+  // A API recusa conectar app de versão velha (426): avisa para o App atualizar.
+  const start = () => connection.start().catch((error: unknown) => {
+    if (isUpgradeRequired(error)) notifyUpgradeRequired()
+    throw error
+  })
+  return createLifecycle({ start, stop: () => connection.stop() }, () => handlers.resync())
 }
+
+/** Erro do SignalR (HttpError) com status 426. Exportada para teste. */
+export const isUpgradeRequired = (error: unknown): boolean =>
+  (error as { statusCode?: number } | null)?.statusCode === UPGRADE_REQUIRED

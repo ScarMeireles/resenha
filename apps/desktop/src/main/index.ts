@@ -5,6 +5,7 @@ import { isPopoutName } from './popoutName'
 import { registerScreenHandlers } from './screen'
 import { registerScreenAudioHandlers } from './screenAudio'
 import { registerSessionHandlers } from './session'
+import { registerUpdateHandlers } from './updater'
 
 // Só uma janela do Resenha por vez: abrir de novo traz a que já está aberta para a frente.
 if (!app.requestSingleInstanceLock()) app.quit()
@@ -61,6 +62,7 @@ app.whenReady().then(() => {
   registerSessionHandlers()
   registerScreenHandlers(() => mainWindow?.getMediaSourceId() ?? null)
   registerScreenAudioHandlers()
+  registerUpdateHandlers()
   registerPopoutHandlers()
   createWindow()
 })

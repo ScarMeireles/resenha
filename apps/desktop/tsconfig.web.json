@@ -15,5 +15,5 @@
     "composite": true,
     "paths": { "@shared/*": ["../../shared/*"] }
   },
-  "include": ["src/renderer/src/**/*", "src/preload/*.d.ts", "src/main/screenChoice.ts", "src/main/popoutName.ts", "../../shared/*.json"]
+  "include": ["src/renderer/src/**/*", "src/preload/*.d.ts", "src/main/screenChoice.ts", "src/main/popoutName.ts", "src/main/updateRules.ts", "../../shared/*.json"]
 }

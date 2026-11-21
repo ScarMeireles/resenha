@@ -4,6 +4,9 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (atualização obrigatória, branch `feature/atualizacao-obrigatoria`)
+- R13: a API serve `latest.yml` + instalador em `/updates` (pasta fora do Git, `deploy/updates` no servidor), informa a versão em `/version` e responde 426 para app mais velho (cabeçalho `X-Resenha-Version`; no SignalR vai na URL). O app usa electron-updater: ao abrir ou ao receber 426, baixa, mostra "Atualizando…" e reinstala em silêncio. Publicação com `npm run release:local` (`scripts/publicar-versao.mjs`). `electron-builder.yml` virou `electron-builder.ts`; o check-secrets agora barra `.exe`, `.blockmap` e `latest.yml`. Instalado `electron-updater` 6.8.11 (gratuito) como devDependency (no `node_modules` do repo principal, via junction). Testado de verdade com um build isolado (outro appId): 0.1.0 instalado atualizou sozinho para 0.1.1 em ~20 s e reabriu. Sem merge.
+
 ## 20/11/2026 — sessão interativa (bug: removido do grupo ainda recebia mensagens, branch `feature/corrige-remocao-grupo`)
 - Bug do servidor, não só do teste: o SignalR libera o cliente antes do `OnConnectedAsync`; se a remoção caía no meio (conexão já leu "é membro" no banco, mas ainda não estava registrada), ela entrava no grupo depois e o ex-membro seguia recebendo as mensagens. Agora entrada nos grupos + registro da conexão e adição/remoção de membro passam pela mesma trava do `GroupNotifier`, e `groupRemoved` só sai depois de todas as conexões deixarem o grupo (vale para sair, ser removido e grupo apagado). DMs não usam grupo do SignalR (vão para os dois participantes fixos), então não há ex-participante. Testes de tempo real esperam a conexão ficar pronta em vez de `Task.Delay`; loop 20/20 nos `RealtimeTests` e na suíte completa.
 

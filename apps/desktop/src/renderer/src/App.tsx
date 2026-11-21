@@ -1,13 +1,18 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { DEV_MESSAGE, nextStep, type UpdateProgress, type UpdateReason } from '../../main/updateRules'
 import { api, ApiError, type AuthResponse, type User } from './lib/api'
+import { onUpgradeRequired } from './lib/appVersion'
 import { AuthScreen } from './screens/AuthScreen'
 import { Shell } from './screens/Shell'
+import { UpdateErrorScreen, UpdateScreen } from './screens/UpdateScreen'
 
 type State =
   | { kind: 'loading' }
   | { kind: 'offline'; message: string } // tem login salvo, mas o servidor não respondeu
   | { kind: 'signedOut' }
   | { kind: 'signedIn'; token: string; user: User; notice?: string }
+  | { kind: 'updating'; progress: UpdateProgress | null } // atualização obrigatória baixando (R13)
+  | { kind: 'updateError'; reason: UpdateReason; message: string }
 
 export function App() {
   const [state, setState] = useState<State>({ kind: 'loading' })
@@ -33,9 +38,41 @@ export function App() {
     }
   }, [])
 
+  // Atualização obrigatória (R13): ao abrir, e sempre que a API responder 426 (versão velha), baixa e instala
+  // sozinho a versão nova. Devolve true quando o app pode seguir normalmente.
+  const updating = useRef(false)
+  const update = useCallback(async (reason: UpdateReason): Promise<boolean> => {
+    if (updating.current) return false
+    updating.current = true
+    try {
+      const outcome = await window.resenha.updates.run(reason)
+      const step = nextStep(reason, outcome)
+      if (step === 'showError') setState({ kind: 'updateError', reason, message: outcome.kind === 'error' ? outcome.message : DEV_MESSAGE })
+      return step === 'continue'
+    } finally {
+      updating.current = false
+    }
+  }, [])
+
+  const start = useCallback(async () => {
+    setState({ kind: 'loading' })
+    if (await update('startup')) await resume()
+  }, [update, resume])
+
+  const required = useCallback(async () => {
+    if (updating.current) return
+    setState({ kind: 'updating', progress: null })
+    if (await update('required')) await resume()
+  }, [update, resume])
+
   useEffect(() => {
-    void resume()
-  }, [resume])
+    void start()
+  }, [start])
+
+  useEffect(() => onUpgradeRequired(() => void required()), [required])
+
+  // O download só começa quando há versão nova: o primeiro progresso troca a tela para "Atualizando…".
+  useEffect(() => window.resenha.updates.onProgress((progress) => setState({ kind: 'updating', progress })), [])
 
   const signIn = useCallback(async (auth: AuthResponse, notice?: string) => {
     await window.resenha.session.save(auth.token)
@@ -79,5 +116,9 @@ export function App() {
       return <AuthScreen onAuthenticated={signIn} />
     case 'signedIn':
       return <Shell user={state.user} token={state.token} notice={state.notice} onSignOut={signOut} onAccountChange={updateAccount} />
+    case 'updating':
+      return <UpdateScreen progress={state.progress} />
+    case 'updateError':
+      return <UpdateErrorScreen message={state.message} onRetry={() => void (state.reason === 'startup' ? start() : required())} />
   }
 }
