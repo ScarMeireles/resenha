@@ -4,6 +4,9 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (cartão de perfil e userUpdated, branch `feature/cartao-perfil`)
+- Clicar na própria foto abre o cartão de perfil (banner, foto, nome e @ editáveis, bolinha de status com menu Online/Ausente/Offline, "Áudio e vídeo"); "Ausente" virou lua amarela em todo avatar. Novo evento `userUpdated` (amigos, colegas de grupo, quem tem DM e as outras janelas; estranho não recebe) atualiza amigos, pedidos, membros e mensagens; na troca de @ o token novo vai para a sessão salva. Testes: API 177, app 190; conferido no Electron por CDP. Sem merge.
+
 ## 20/11/2026 — sessão interativa (API de DM e troca do @, branch `feature/api-dm-e-arroba`)
 - Só servidor (a tela espera os modelos). `PUT /me/username` (token novo; o antigo segue valendo) e mensagens diretas em `/dms`, na mesma tabela `Messages` do grupo (coluna `ConversationId` + tabela `DirectConversations`, migração `ConversasDiretas`). O código comum de enviar/paginar/apagar saiu de `GroupEndpoints` para `Chat/ChatMessages.cs`. Testes: 174 ok (24 novos). Sem merge.
 

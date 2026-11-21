@@ -23,6 +23,8 @@ export interface RealtimeHandlers {
   messageCreated(message: MessageDto): void
   messageDeleted(payload: { groupId: string; messageId: string }): void
   voiceParticipants(payload: { groupId: string; userIds: string[] }): void
+  /** Alguém que conheço (ou eu, em outra janela) mudou nome, foto, banner ou @. */
+  userUpdated(user: User): void
   callIncoming(payload: { room: string; from: User }): void
   callAccepted(payload: CallActionPayload): void
   callDeclined(payload: CallActionPayload): void
@@ -56,7 +58,7 @@ export interface HubLike {
 const EVENTS = [
   'friendRequestReceived', 'friendAdded', 'friendRequestRemoved', 'friendRemoved', 'presenceChanged',
   'groupAdded', 'groupUpdated', 'groupRemoved', 'messageCreated', 'messageDeleted',
-  'voiceParticipants', 'callIncoming', 'callAccepted', 'callDeclined', 'callCancelled', 'callEnded',
+  'voiceParticipants', 'userUpdated', 'callIncoming', 'callAccepted', 'callDeclined', 'callCancelled', 'callEnded',
 ] as const
 
 /** Liga cada evento do servidor ao handler correspondente. */

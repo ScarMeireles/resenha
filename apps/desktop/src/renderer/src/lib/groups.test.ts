@@ -244,3 +244,30 @@ describe('sala de voz do grupo', () => {
     expect(applied).toEqual([['g1', ['a']], ['g3', ['a']]])
   })
 })
+
+describe('userUpdated (nome, foto ou @ de alguém mudou)', () => {
+  const renamed: User = { ...user('u2'), displayName: 'Nome Novo', username: 'novo', avatarUrl: '/media/avatars/n.webp' }
+
+  it('troca a pessoa nos membros dos grupos em que ela está', () => {
+    const before = [group('a', 'u1', 'u2'), group('b', 'u3')]
+    const after = groupsReducer(before, { type: 'userUpdated', user: renamed })
+    expect(after[0].members.find((m) => m.user.id === 'u2')?.user).toEqual(renamed)
+    expect(after[0].members[0]).toBe(before[0].members[0])
+    expect(after[1]).toBe(before[1])
+  })
+
+  it('não muda nada (mesma referência) se ninguém conhece a pessoa', () => {
+    const before = [group('b', 'u3')]
+    expect(groupsReducer(before, { type: 'userUpdated', user: renamed })).toBe(before)
+  })
+
+  it('troca o autor nas mensagens já carregadas', () => {
+    const mine = { ...message('m2'), author: user('u2') }
+    const before: MessagesState = { g1: { items: [message('m1'), mine], hasMore: false }, g2: { items: [message('m3', undefined, 'g2')], hasMore: false } }
+    const after = messagesReducer(before, { type: 'userUpdated', user: renamed })
+    expect(after.g1.items[1].author).toEqual(renamed)
+    expect(after.g1.items[0]).toBe(before.g1.items[0])
+    expect(after.g2).toBe(before.g2)
+    expect(messagesReducer(after, { type: 'userUpdated', user: { ...user('u9') } })).toBe(after)
+  })
+})

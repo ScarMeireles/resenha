@@ -1,5 +1,6 @@
 import { request, type User } from './api'
 import type { Presence } from './presence'
+import { replaceUser } from './users'
 
 /** Tipos e chamadas de amigos. Espelham server/api (FriendDto, FriendRequestDto). */
 
@@ -58,6 +59,7 @@ export type FriendsAction =
   | { type: 'friendAdded'; friend: FriendDto }
   | { type: 'friendRemoved'; userId: string }
   | { type: 'presenceChanged'; userId: string; presence: Presence }
+  | { type: 'userUpdated'; user: User }
 
 /** Insere ou troca pelo id, sem duplicar (o evento pode chegar junto com a resposta HTTP). */
 const upsertRequest = (list: FriendRequestDto[], item: FriendRequestDto) =>
@@ -93,6 +95,12 @@ export function friendsReducer(state: FriendsState, action: FriendsAction): Frie
       return {
         ...state,
         friends: state.friends.map((f) => (f.user.id === action.userId ? { ...f, presence: action.presence } : f)),
+      }
+    case 'userUpdated':
+      return {
+        friends: replaceUser(state.friends, action.user),
+        incoming: replaceUser(state.incoming, action.user),
+        outgoing: replaceUser(state.outgoing, action.user),
       }
   }
 }
