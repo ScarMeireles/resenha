@@ -1,0 +1,14 @@
+# Um endereço só para tudo. O Caddy tira e renova sozinho o certificado HTTPS (Let's Encrypt, grátis).
+{$RESENHA_DOMAIN} {
+	encode zstd gzip
+
+	# Sinalização do LiveKit: o app conecta em wss://dominio e a biblioteca usa os caminhos /rtc...
+	handle /rtc* {
+		reverse_proxy livekit:7880
+	}
+
+	# Todo o resto é a API (inclusive o WebSocket do SignalR em /hubs/app).
+	handle {
+		reverse_proxy api:8080
+	}
+}

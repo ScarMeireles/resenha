@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -113,6 +114,23 @@ builder.Services.AddAuthorization();
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
     policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
+// --- Proxy reverso (servidor real): o Caddy recebe o HTTPS e repassa para a API. Sem isto, todo pedido pareceria
+// vir do IP do Caddy e o limite por IP valeria para todos juntos. Só se aceita X-Forwarded-For vindo de rede privada
+// (a rede interna do Docker), porque a porta da API não é publicada; de fora ninguém consegue forjar o cabeçalho.
+var behindProxy = builder.Configuration.GetValue("ReverseProxy:Enabled", false);
+if (behindProxy)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.ForwardLimit = 1;
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+        foreach (var network in new[] { "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16" })
+            options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(network));
+    });
+}
+
 // --- Limite de tentativas em cadastro/login, por IP, contra quem tenta adivinhar senha
 var authPerMinute = builder.Configuration.GetValue("RateLimit:AuthPerMinute", 10);
 var friendRequestsPerMinute = builder.Configuration.GetValue("RateLimit:FriendRequestsPerMinute", 20);
@@ -147,6 +165,8 @@ var app = builder.Build();
 // Cria/atualiza o banco ao subir. Para um app entre amigos, é mais simples que rodar migração à mão.
 using (var scope = app.Services.CreateScope())
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+
+if (behindProxy) app.UseForwardedHeaders(); // primeiro de tudo, para o resto já ver o IP real
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();

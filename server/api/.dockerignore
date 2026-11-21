@@ -1,0 +1,8 @@
+# Nada de segredo, banco ou compilação local dentro da imagem.
+bin/
+obj/
+.data/
+appsettings.Development.json
+appsettings.*.local.json
+*.db
+*.db-*

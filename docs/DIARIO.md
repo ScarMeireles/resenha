@@ -4,6 +4,13 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (passo 10, arquivos de deploy)
+- D6 respondida (opção A, agora R11). Branch `feature/passo-10-hospedagem`.
+- `deploy/`: `docker-compose.yml` com Caddy (HTTPS automático do Let's Encrypt), API e LiveKit num endereço só (`/rtc*` vai para o LiveKit, o resto para a API); `livekit.yaml` com `use_external_ip` (o IP não fica escrito em lugar nenhum); `setup-vm.sh` (Docker, iptables e `.env` com segredos gerados na própria VM); `publish.ps1` (envia o último commit por `git archive` + scp/ssh, sem depender de push).
+- API: `server/api/Dockerfile` (x64 e ARM) e `ReverseProxy:Enabled`, que lê o IP real do `X-Forwarded-For` só quando o pedido vem de rede privada. Assim o limite de login por IP continua valendo para cada pessoa. Testes: 151 (2 novos em `ReverseProxyTests`).
+- Validado no Docker local (x64): imagem compila, `/health` responde, cadastro e envio de foto (Magick.NET no Linux) OK, compose e Caddyfile válidos. **Não testado:** ARM, HTTPS real e chamada pela internet; isso fica para quando a VM existir.
+- Guia passo a passo em `docs/HOSPEDAGEM.md`. Próximo: o usuário cria a conta e a VM; depois, subir o servidor, gerar o instalador com `.env.production` e testar com um amigo.
+
 ## 20/11/2026 20:13 — execução automática (resenha-continuar)
 - Encontrou o passo 11 sem commit em `feature/passo-11-instalador`. Rodou typecheck, `npm test` (176 ok), build do app e `dotnet test server` (149 ok): tudo passou.
 - Enquanto os testes rodavam, a sessão interativa commitou (`8f6e3e1`) e fez merge em `hml` (`6a2435f`). Os commits desta execução não tiveram efeito, e nada foi duplicado.
