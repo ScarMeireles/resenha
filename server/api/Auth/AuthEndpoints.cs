@@ -100,16 +100,22 @@ public static class AuthEndpoints
     }
 
     /// <summary>Usado pela tela de cadastro para mostrar em tempo real se o @ está livre. Não exige login.</summary>
-    private static async Task<IResult> UsernameAvailable(string? u, AppDbContext db)
+    private static async Task<IResult> UsernameAvailable(string? u, AppDbContext db) =>
+        Results.Ok(await CheckUsername(AccountRules.NormalizeUsername(u), db));
+
+    /// <summary>
+    /// Confere um @ já normalizado: regras do cadastro e se ninguém usa. Serve para a checagem em tempo real
+    /// e para a troca do próprio @ (Available = false com Error null quer dizer "em uso").
+    /// </summary>
+    public static async Task<UsernameAvailability> CheckUsername(string username, AppDbContext db)
     {
-        var username = AccountRules.NormalizeUsername(u);
         if (AccountRules.ValidateUsername(username) is { } error)
-            return Results.Ok(new UsernameAvailability(false, error));
+            return new UsernameAvailability(false, error);
         var taken = await db.Users.AnyAsync(x => x.Username == username);
-        return Results.Ok(new UsernameAvailability(!taken, null));
+        return new UsernameAvailability(!taken, null);
     }
 
-    private static IResult UsernameTaken() =>
+    public static IResult UsernameTaken() =>
         Results.Problem(statusCode: StatusCodes.Status409Conflict, title: "Esse @ já está em uso.");
 
     private static IResult WrongCredentials() =>

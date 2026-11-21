@@ -17,6 +17,31 @@ namespace Resenha.Api.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.15");
 
+            modelBuilder.Entity("Resenha.Api.Data.DirectConversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("CreatedAt")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("UserAId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserBId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserBId");
+
+                    b.HasIndex("UserAId", "UserBId")
+                        .IsUnique();
+
+                    b.ToTable("DirectConversations");
+                });
+
             modelBuilder.Entity("Resenha.Api.Data.Friendship", b =>
                 {
                     b.Property<Guid>("Id")
@@ -101,13 +126,16 @@ namespace Resenha.Api.Data.Migrations
                     b.Property<Guid>("AuthorId")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("ConversationId")
+                        .HasColumnType("TEXT");
+
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("GroupId")
+                    b.Property<Guid?>("GroupId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Text")
@@ -119,9 +147,14 @@ namespace Resenha.Api.Data.Migrations
 
                     b.HasIndex("AuthorId");
 
+                    b.HasIndex("ConversationId", "CreatedAt");
+
                     b.HasIndex("GroupId", "CreatedAt");
 
-                    b.ToTable("Messages");
+                    b.ToTable("Messages", t =>
+                        {
+                            t.HasCheckConstraint("CK_Messages_GrupoOuConversa", "(\"GroupId\" IS NULL) <> (\"ConversationId\" IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("Resenha.Api.Data.MessageImage", b =>
@@ -227,6 +260,25 @@ namespace Resenha.Api.Data.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Resenha.Api.Data.DirectConversation", b =>
+                {
+                    b.HasOne("Resenha.Api.Data.User", "UserA")
+                        .WithMany()
+                        .HasForeignKey("UserAId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Resenha.Api.Data.User", "UserB")
+                        .WithMany()
+                        .HasForeignKey("UserBId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("UserA");
+
+                    b.Navigation("UserB");
+                });
+
             modelBuilder.Entity("Resenha.Api.Data.Friendship", b =>
                 {
                     b.HasOne("Resenha.Api.Data.User", "Addressee")
@@ -280,11 +332,15 @@ namespace Resenha.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Resenha.Api.Data.DirectConversation", null)
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("Resenha.Api.Data.Group", null)
                         .WithMany()
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Author");
                 });

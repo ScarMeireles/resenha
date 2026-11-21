@@ -7,6 +7,7 @@ using Resenha.Api.Media;
 namespace Resenha.Api.Accounts;
 
 public record UpdateMeRequest(string? DisplayName);
+public record ChangeUsernameRequest(string? Username);
 
 public static class AccountEndpoints
 {
@@ -19,6 +20,7 @@ public static class AccountEndpoints
 
         me.MapGet("/", GetMe);
         me.MapPatch("/", UpdateMe);
+        me.MapPut("/username", ChangeUsername);
         MapImage(me, "/avatar", MediaKind.Avatar);
         MapImage(me, "/banner", MediaKind.Banner);
 
@@ -57,6 +59,42 @@ public static class AccountEndpoints
 
         await db.SaveChangesAsync();
         return Results.Ok(UserDto.From(user));
+    }
+
+    /// <summary>
+    /// Troca o próprio @ (livre, sem limite; o antigo fica disponível na hora). Amigos, grupos e mensagens
+    /// apontam para o Id, então nada quebra. Devolve um token novo com o @ atualizado; o antigo continua
+    /// valendo, porque a sessão é identificada pelo Id e pelo carimbo de segurança, que não mudam.
+    /// </summary>
+    private static async Task<IResult> ChangeUsername(ChangeUsernameRequest request, HttpContext http, AppDbContext db, TokenService tokens)
+    {
+        var user = await db.Users.FindAsync(http.User.GetUserId());
+        if (user is null) return Results.Unauthorized();
+
+        var username = AccountRules.NormalizeUsername(request.Username);
+        if (username != user.Username)
+        {
+            var check = await AuthEndpoints.CheckUsername(username, db);
+            if (check.Error is { } error)
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["username"] = [error] });
+            if (!check.Available) return AuthEndpoints.UsernameTaken();
+
+            user.Username = username;
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // Outra pessoa pegou o mesmo @ ao mesmo tempo: o índice único segurou.
+                if (await db.Users.AsNoTracking().AnyAsync(u => u.Username == username && u.Id != user.Id))
+                    return AuthEndpoints.UsernameTaken();
+                throw;
+            }
+        }
+
+        var (token, expiresAt) = tokens.Create(user);
+        return Results.Ok(new AuthResponse(token, expiresAt, UserDto.From(user)));
     }
 
     private static async Task<IResult> GetUser(string username, AppDbContext db)

@@ -4,6 +4,9 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (API de DM e troca do @, branch `feature/api-dm-e-arroba`)
+- Só servidor (a tela espera os modelos). `PUT /me/username` (token novo; o antigo segue valendo) e mensagens diretas em `/dms`, na mesma tabela `Messages` do grupo (coluna `ConversationId` + tabela `DirectConversations`, migração `ConversasDiretas`). O código comum de enviar/paginar/apagar saiu de `GroupEndpoints` para `Chat/ChatMessages.cs`. Testes: 174 ok (24 novos). Sem merge.
+
 ## 20/11/2026 — sessão interativa (instalador com escolha de pasta)
 - electron-builder.yml: NSIS virou assistente (oneClick false, allowToChangeInstallationDirectory true), mesmo appId, perMachine false. README explica como atualizar. Branch `feature/instalador-pasta`, com merge em `hml`.
 

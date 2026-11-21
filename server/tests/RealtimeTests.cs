@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using Resenha.Api.Auth;
+using Resenha.Api.Chat;
 using Resenha.Api.Friends;
 using Resenha.Api.Groups;
 
@@ -239,5 +240,66 @@ public class RealtimeTests(ApiFactory factory) : IClassFixture<ApiFactory>, IAsy
         await CreateConnection(authC.Token).StartAsync();
 
         await online;
+    }
+
+    // --- Mensagens diretas
+
+    private static async Task<DirectConversationDto> OpenDm(HttpClient client, Guid userId)
+    {
+        var response = await client.PostAsJsonAsync("/dms", new OpenDirectConversationRequest(userId));
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<DirectConversationDto>())!;
+    }
+
+    private static async Task<DirectMessageDto> SendDm(HttpClient client, Guid conversationId, string text)
+    {
+        var response = await client.PostAsync($"/dms/{conversationId}/messages", GroupTestHelpers.MessageForm(text));
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<DirectMessageDto>())!;
+    }
+
+    [Fact]
+    public async Task So_os_dois_da_dm_recebem_directMessageCreated()
+    {
+        var (a, authA) = await factory.CreateLoggedUserAsync();
+        var (_, authB) = await GroupTestHelpers.FriendOf(factory, a);
+        var (_, authC) = await GroupTestHelpers.FriendOf(factory, a); // amigo de A, fora da conversa
+        var conversation = await OpenDm(a, authB.User.Id);
+        var toB = CreateConnection(authB.Token);
+        var toA = CreateConnection(authA.Token);
+        var third = CreateConnection(authC.Token);
+        var receivedB = Expect<DirectMessageDto>(toB, "directMessageCreated");
+        var receivedA = Expect<DirectMessageDto>(toA, "directMessageCreated"); // outras janelas de quem enviou
+        var leaked = new List<DirectMessageDto>();
+        third.On<DirectMessageDto>("directMessageCreated", leaked.Add);
+        await Task.WhenAll(toB.StartAsync(), toA.StartAsync(), third.StartAsync());
+
+        var sent = await SendDm(a, conversation.Id, "só pra você");
+
+        var message = await receivedB;
+        Assert.Equal(sent.Id, message.Id);
+        Assert.Equal(conversation.Id, message.ConversationId);
+        Assert.Equal("só pra você", message.Text);
+        Assert.Equal(sent.Id, (await receivedA).Id);
+        await Task.Delay(500);
+        Assert.Empty(leaked);
+    }
+
+    [Fact]
+    public async Task Outro_da_dm_recebe_directMessageDeleted()
+    {
+        var (a, _) = await factory.CreateLoggedUserAsync();
+        var (_, authB) = await GroupTestHelpers.FriendOf(factory, a);
+        var conversation = await OpenDm(a, authB.User.Id);
+        var sent = await SendDm(a, conversation.Id, "oi");
+        var connection = CreateConnection(authB.Token);
+        var deleted = Expect<JsonElement>(connection, "directMessageDeleted");
+        await connection.StartAsync();
+
+        (await a.DeleteAsync($"/dms/{conversation.Id}/messages/{sent.Id}")).EnsureSuccessStatusCode();
+
+        var payload = await deleted;
+        Assert.Equal(conversation.Id, payload.GetProperty("conversationId").GetGuid());
+        Assert.Equal(sent.Id, payload.GetProperty("messageId").GetGuid());
     }
 }
