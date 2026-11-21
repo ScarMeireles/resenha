@@ -17,10 +17,15 @@ public class GroupMember
     public DateTimeOffset JoinedAt { get; set; }
 }
 
+/// <summary>
+/// Mensagem de chat. Fica num grupo OU numa conversa direta (DM): exatamente um dos dois é preenchido
+/// (o banco confere com uma restrição). Assim grupos e DMs usam a mesma tabela, as mesmas imagens e o mesmo "apagar".
+/// </summary>
 public class Message
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public Guid GroupId { get; set; }
+    public Guid? GroupId { get; set; }
+    public Guid? ConversationId { get; set; }
     public Guid AuthorId { get; set; }
     public User Author { get; set; } = null!;
     public string Text { get; set; } = "";

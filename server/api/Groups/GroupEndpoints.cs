@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Resenha.Api.Accounts;
 using Resenha.Api.Auth;
+using Resenha.Api.Chat;
 using Resenha.Api.Data;
 using Resenha.Api.Friends;
 using Resenha.Api.Media;
@@ -21,11 +22,6 @@ public record AddMembersRequest(Guid[]? UserIds);
 
 public static class GroupEndpoints
 {
-    public const string MessageRateLimitPolicy = "messages";
-
-    // Cada imagem até 10 MB; total = 4x + folga para o "envelope" do multipart e o texto.
-    private const long MaxMessageRequestBytes = ImageProcessor.MaxUploadBytes * GroupRules.MaxImagesPerMessage + 256 * 1024;
-
     public static void MapGroupEndpoints(this IEndpointRouteBuilder app)
     {
         var groups = app.MapGroup("/groups").WithTags("Grupos").RequireAuthorization();
@@ -39,8 +35,8 @@ public static class GroupEndpoints
         groups.MapGet("/{id:guid}/messages", ListMessages);
         groups.MapPost("/{id:guid}/messages", SendMessage)
             .DisableAntiforgery() // a API usa token no cabeçalho, não cookie: não há risco de CSRF
-            .WithMetadata(new RequestSizeLimitAttribute(MaxMessageRequestBytes))
-            .RequireRateLimiting(MessageRateLimitPolicy);
+            .WithMetadata(new RequestSizeLimitAttribute(ChatMessages.MaxRequestBytes))
+            .RequireRateLimiting(ChatMessages.RateLimitPolicy);
         groups.MapDelete("/{id:guid}/messages/{messageId:guid}", DeleteMessage);
     }
 
@@ -55,8 +51,8 @@ public static class GroupEndpoints
             .ToListAsync();
         var ids = mine.Select(g => g.Id).ToList();
         var lastMessages = await db.Messages
-            .Where(m => ids.Contains(m.GroupId))
-            .GroupBy(m => m.GroupId)
+            .Where(m => m.GroupId != null && ids.Contains(m.GroupId.Value))
+            .GroupBy(m => m.GroupId!.Value)
             .Select(g => new { GroupId = g.Key, Last = g.Max(m => m.CreatedAt) })
             .ToDictionaryAsync(x => x.GroupId, x => x.Last);
 
@@ -195,20 +191,8 @@ public static class GroupEndpoints
     {
         if (await LoadMemberGroup(db, id, http.User.GetUserId()) is null) return GroupNotFound();
 
-        var query = db.Messages.AsNoTracking().Where(m => m.GroupId == id);
-        if (before is { } cursorId)
-        {
-            var cursor = await db.Messages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == cursorId && m.GroupId == id);
-            if (cursor is null) return Problem(StatusCodes.Status404NotFound, "Mensagem não encontrada.");
-            var cursorTime = cursor.CreatedAt;
-            query = query.Where(m => m.CreatedAt < cursorTime);
-        }
-
-        var take = Math.Clamp(limit ?? GroupRules.PageSize, 1, GroupRules.MaxPageSize);
-        var page = await query.Include(m => m.Author).Include(m => m.Images)
-            .OrderByDescending(m => m.CreatedAt).Take(take).ToListAsync();
-        page.Reverse(); // mais antiga primeiro
-        return Results.Ok(page.Select(ToDto).ToArray());
+        var (page, error) = await ChatMessages.PageAsync(db.Messages.Where(m => m.GroupId == id), before, limit);
+        return error ?? Results.Ok(page!.Select(ToDto).ToArray());
     }
 
     private static async Task<IResult> SendMessage(
@@ -218,50 +202,9 @@ public static class GroupEndpoints
         var me = http.User.GetUserId();
         if (await LoadMemberGroup(db, id, me) is null) return GroupNotFound();
 
-        var text = form["text"].ToString().Trim();
-        var files = form.Files.GetFiles("images");
-        if (text.Length > GroupRules.MessageMaxLength)
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-                { ["text"] = [$"A mensagem pode ter no máximo {GroupRules.MessageMaxLength} caracteres."] });
-        if (files.Count > GroupRules.MaxImagesPerMessage)
-            return Problem(StatusCodes.Status400BadRequest, $"Cada mensagem pode ter no máximo {GroupRules.MaxImagesPerMessage} imagens.");
-        if (text.Length == 0 && files.Count == 0)
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-                { ["text"] = ["Escreva algo ou envie uma imagem."] });
-        if (files.Any(f => f.Length > ImageProcessor.MaxUploadBytes))
-            return Problem(StatusCodes.Status413PayloadTooLarge, "Cada imagem pode ter no máximo 10 MB.");
+        var message = new Message { GroupId = id, AuthorId = me, CreatedAt = clock.GetUtcNow() };
+        if (await ChatMessages.SaveAsync(message, form, db, images, storage, ct) is { } error) return error;
 
-        var message = new Message { GroupId = id, AuthorId = me, Text = text, CreatedAt = clock.GetUtcNow() };
-        var saved = new List<string>();
-        try
-        {
-            var order = 0;
-            foreach (var file in files)
-            {
-                using var buffer = new MemoryStream((int)file.Length);
-                await file.CopyToAsync(buffer, ct);
-                buffer.Position = 0;
-                var processed = await images.ProcessAsync(buffer, MediaKind.Chat, ct);
-                var name = await storage.SaveAsync(MediaKind.Chat, processed.Webp, ct);
-                saved.Add(name);
-                message.Images.Add(new MessageImage { File = name, Width = processed.Width, Height = processed.Height, Order = order++ });
-            }
-
-            db.Messages.Add(message);
-            await db.SaveChangesAsync(ct);
-        }
-        catch (InvalidImageException ex)
-        {
-            foreach (var name in saved) storage.Delete(MediaKind.Chat, name);
-            return Problem(StatusCodes.Status400BadRequest, ex.Message);
-        }
-        catch
-        {
-            foreach (var name in saved) storage.Delete(MediaKind.Chat, name); // não deixa arquivo órfão
-            throw;
-        }
-
-        message.Author = (await db.Users.FindAsync([me], ct))!;
         var dto = ToDto(message);
         await notifier.Message(dto);
         return Results.Created($"/groups/{id}/messages/{message.Id}", dto);
@@ -274,18 +217,8 @@ public static class GroupEndpoints
         var me = http.User.GetUserId();
         if (await LoadMemberGroup(db, id, me) is null) return GroupNotFound();
 
-        var message = await db.Messages.Include(m => m.Images)
-            .FirstOrDefaultAsync(m => m.Id == messageId && m.GroupId == id && m.DeletedAt == null);
-        if (message is null) return Problem(StatusCodes.Status404NotFound, "Mensagem não encontrada.");
-        if (message.AuthorId != me) return Problem(StatusCodes.Status403Forbidden, "Só quem escreveu pode apagar a mensagem.");
-
-        var files = message.Images.Select(i => i.File).ToList();
-        db.MessageImages.RemoveRange(message.Images);
-        message.Text = "";
-        message.DeletedAt = clock.GetUtcNow();
-        await db.SaveChangesAsync();
-
-        foreach (var file in files) storage.Delete(MediaKind.Chat, file);
+        if (await ChatMessages.DeleteAsync(db.Messages.Where(m => m.GroupId == id), messageId, me, db, clock, storage) is { } error)
+            return error;
         await notifier.MessageRemoved(id, messageId);
         return Results.NoContent();
     }
@@ -330,11 +263,10 @@ public static class GroupEndpoints
 
     public static MessageDto ToDto(Message message) => new(
         message.Id,
-        message.GroupId,
+        message.GroupId ?? throw new InvalidOperationException("Mensagem de DM tratada como de grupo."),
         UserDto.From(message.Author),
         message.Text,
-        message.Images.OrderBy(i => i.Order)
-            .Select(i => new MessageImageDto($"/media/{MediaKind.Chat.Folder()}/{i.File}", i.Width, i.Height)).ToArray(),
+        ChatMessages.ImagesOf(message),
         message.CreatedAt,
         message.DeletedAt is not null);
 }

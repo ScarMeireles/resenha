@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<MessageImage> MessageImages => Set<MessageImage>();
     public DbSet<MissedCall> MissedCalls => Set<MissedCall>();
+    public DbSet<DirectConversation> DirectConversations => Set<DirectConversation>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -54,9 +55,24 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             // SQLite não ordena DateTimeOffset no banco; guardamos como ticks UTC (número) para ordenar e paginar.
             message.Property(m => m.CreatedAt).HasConversion(v => v.UtcTicks, v => new DateTimeOffset(v, TimeSpan.Zero));
             message.HasIndex(m => new { m.GroupId, m.CreatedAt });
+            message.HasIndex(m => new { m.ConversationId, m.CreatedAt });
             message.HasOne<Group>().WithMany().HasForeignKey(m => m.GroupId).OnDelete(DeleteBehavior.Cascade);
+            message.HasOne<DirectConversation>().WithMany().HasForeignKey(m => m.ConversationId).OnDelete(DeleteBehavior.Cascade);
+            // Toda mensagem é de um grupo ou de uma DM, nunca dos dois nem de nenhum.
+            message.ToTable(t => t.HasCheckConstraint("CK_Messages_GrupoOuConversa",
+                "(\"GroupId\" IS NULL) <> (\"ConversationId\" IS NULL)"));
             message.HasOne(m => m.Author).WithMany().HasForeignKey(m => m.AuthorId).OnDelete(DeleteBehavior.Restrict);
             message.HasMany(m => m.Images).WithOne().HasForeignKey(i => i.MessageId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DirectConversation>(conversation =>
+        {
+            conversation.Property(c => c.CreatedAt).HasConversion(v => v.UtcTicks, v => new DateTimeOffset(v, TimeSpan.Zero));
+            conversation.HasIndex(c => new { c.UserAId, c.UserBId }).IsUnique();
+            conversation.HasIndex(c => c.UserBId);
+            // Restrict: hoje conta não é apagada; se um dia for, a DM precisa ser tratada de propósito.
+            conversation.HasOne(c => c.UserA).WithMany().HasForeignKey(c => c.UserAId).OnDelete(DeleteBehavior.Restrict);
+            conversation.HasOne(c => c.UserB).WithMany().HasForeignKey(c => c.UserBId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<MessageImage>(image => image.Property(i => i.File).HasMaxLength(64));

@@ -4,6 +4,9 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (API de DM e troca do @, branch `feature/api-dm-e-arroba`)
+- Só servidor (a tela espera os modelos). `PUT /me/username` (token novo; o antigo segue valendo) e mensagens diretas em `/dms`, na mesma tabela `Messages` do grupo (coluna `ConversationId` + tabela `DirectConversations`, migração `ConversasDiretas`). O código comum de enviar/paginar/apagar saiu de `GroupEndpoints` para `Chat/ChatMessages.cs`. Testes: 174 ok (24 novos). Sem merge.
+
 ## 20/11/2026 22:13 — execução automática (resenha-continuar)
 - Árvore limpa em `hml` e nenhuma dúvida respondida para aplicar. Uso: 2% (5 h) e 46% (semanal).
 - O que falta no roteiro depende de você: o passo 10 precisa subir o servidor no seu PC e testar com um amigo pelo Radmin (o firewall pede administrador). O passo 11 precisa de push e Releases, que esta automação não pode fazer.
