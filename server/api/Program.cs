@@ -65,6 +65,7 @@ builder.Services.AddSingleton<CallTracker>();
 builder.Services.AddSingleton<CallNotifier>();
 builder.Services.AddSingleton<LiveKitTokenService>();
 builder.Services.AddScoped<PresenceNotifier>();
+builder.Services.AddScoped<UserNotifier>();
 
 // --- LiveKit (voz): sem chave/segredo a API nem sobe, com mensagem clara
 builder.Services.AddOptions<LiveKitOptions>()

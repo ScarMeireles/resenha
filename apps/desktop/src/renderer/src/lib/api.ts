@@ -91,9 +91,20 @@ export const api = {
   /** Troca o token salvo por um novo de 30 dias. O app chama ao abrir. */
   refresh: (token: string) => request<AuthResponse>('POST', '/auth/refresh', { token }),
 
-  uploadAvatar: (token: string, file: File) => {
-    const body = new FormData()
-    body.append('file', file)
-    return request<User>('PUT', '/me/avatar', { token, body })
-  },
+  uploadAvatar: (token: string, file: File) => request<User>('PUT', '/me/avatar', { token, body: fileForm(file) }),
+
+  uploadBanner: (token: string, file: File) => request<User>('PUT', '/me/banner', { token, body: fileForm(file) }),
+
+  removeBanner: (token: string) => request<User>('DELETE', '/me/banner', { token }),
+
+  updateDisplayName: (token: string, displayName: string) => request<User>('PATCH', '/me', { token, json: { displayName } }),
+
+  /** Troca o próprio @. Devolve um token novo (com o @ novo); 409 = já está em uso. */
+  changeUsername: (token: string, username: string) => request<AuthResponse>('PUT', '/me/username', { token, json: { username } }),
+}
+
+function fileForm(file: File): FormData {
+  const body = new FormData()
+  body.append('file', file)
+  return body
 }

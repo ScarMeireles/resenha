@@ -16,13 +16,47 @@ public class GroupNotifier(IHubContext<AppHub> hub, PresenceTracker presence)
     public const string MessageDeleted = "messageDeleted";
     public const string VoiceParticipants = "voiceParticipants";
 
+    // Trava única para quem entra/sai dos grupos do SignalR. Sem ela, uma conexão que estava abrindo podia ler
+    // "ainda é membro" no banco, a remoção não a achava (ainda não registrada) e ela entrava no grupo depois:
+    // quem foi removido continuava recebendo as mensagens. Um servidor só e poucos amigos: uma trava basta.
+    private readonly SemaphoreSlim _membership = new(1, 1);
+
     public static string HubGroup(Guid groupId) => $"group:{groupId}";
 
-    /// <summary>Coloca as conexões abertas da pessoa no grupo e avisa que ela entrou.</summary>
+    /// <summary>
+    /// Conexão nova: entra nos grupos atuais da pessoa (loadGroupIds lê do banco) e registra a conexão (register),
+    /// tudo dentro da trava. Uma adição ou remoção que gravou no banco antes já aparece na leitura; uma que grava
+    /// depois espera a trava, encontra a conexão registrada e a coloca/tira do grupo. Registrar por último mantém
+    /// "conectado no PresenceTracker" = "já está nos grupos". Devolve o que register devolveu.
+    /// </summary>
+    public async Task<T> Connecting<T>(string connectionId, Func<Task<List<Guid>>> loadGroupIds, Func<T> register)
+    {
+        await _membership.WaitAsync();
+        try
+        {
+            foreach (var groupId in await loadGroupIds())
+                await hub.Groups.AddToGroupAsync(connectionId, HubGroup(groupId));
+            return register();
+        }
+        finally
+        {
+            _membership.Release();
+        }
+    }
+
+    /// <summary>Coloca as conexões abertas da pessoa no grupo e avisa que ela entrou. Chame depois de gravar no banco.</summary>
     public async Task Added(Guid userId, GroupDto group)
     {
-        foreach (var connectionId in presence.ConnectionsOf(userId))
-            await hub.Groups.AddToGroupAsync(connectionId, HubGroup(group.Id));
+        await _membership.WaitAsync();
+        try
+        {
+            foreach (var connectionId in presence.ConnectionsOf(userId))
+                await hub.Groups.AddToGroupAsync(connectionId, HubGroup(group.Id));
+        }
+        finally
+        {
+            _membership.Release();
+        }
         await hub.Clients.User(userId.ToString()).SendAsync(GroupAdded, group);
     }
 
@@ -30,12 +64,24 @@ public class GroupNotifier(IHubContext<AppHub> hub, PresenceTracker presence)
     public Task Updated(GroupDto group) =>
         hub.Clients.Group(HubGroup(group.Id)).SendAsync(GroupUpdated, group);
 
-    /// <summary>Tira as conexões da pessoa do grupo e avisa que ela saiu, foi removida ou o grupo acabou.</summary>
+    /// <summary>
+    /// Tira todas as conexões da pessoa do grupo e só então avisa que ela saiu, foi removida ou o grupo acabou:
+    /// quando o app recebe groupRemoved (e quando a requisição responde), nenhuma mensagem do grupo chega mais.
+    /// Chame depois de gravar no banco.
+    /// </summary>
     public async Task Removed(Guid userId, Guid groupId)
     {
+        await _membership.WaitAsync();
+        try
+        {
+            foreach (var connectionId in presence.ConnectionsOf(userId))
+                await hub.Groups.RemoveFromGroupAsync(connectionId, HubGroup(groupId));
+        }
+        finally
+        {
+            _membership.Release();
+        }
         await hub.Clients.User(userId.ToString()).SendAsync(GroupRemoved, new { groupId });
-        foreach (var connectionId in presence.ConnectionsOf(userId))
-            await hub.Groups.RemoveFromGroupAsync(connectionId, HubGroup(groupId));
     }
 
     public Task MessageRemoved(Guid groupId, Guid messageId) =>

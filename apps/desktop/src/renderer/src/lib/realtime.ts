@@ -4,6 +4,7 @@ import { notifyUpgradeRequired, UPGRADE_REQUIRED, withVersionQuery } from './app
 import type { FriendDto, FriendRequestDto } from './friends'
 import type { Presence } from './presence'
 import type { GroupDto, MessageDto } from './groups'
+import type { DirectMessageDto } from './dms'
 
 /** Quem agiu numa chamada: `userId` é a pessoa que aceitou, recusou, cancelou ou desligou. */
 export interface CallActionPayload {
@@ -23,7 +24,11 @@ export interface RealtimeHandlers {
   groupRemoved(payload: { groupId: string }): void
   messageCreated(message: MessageDto): void
   messageDeleted(payload: { groupId: string; messageId: string }): void
+  directMessageCreated(message: DirectMessageDto): void
+  directMessageDeleted(payload: { conversationId: string; messageId: string }): void
   voiceParticipants(payload: { groupId: string; userIds: string[] }): void
+  /** Alguém que conheço (ou eu, em outra janela) mudou nome, foto, banner ou @. */
+  userUpdated(user: User): void
   callIncoming(payload: { room: string; from: User }): void
   callAccepted(payload: CallActionPayload): void
   callDeclined(payload: CallActionPayload): void
@@ -57,7 +62,8 @@ export interface HubLike {
 const EVENTS = [
   'friendRequestReceived', 'friendAdded', 'friendRequestRemoved', 'friendRemoved', 'presenceChanged',
   'groupAdded', 'groupUpdated', 'groupRemoved', 'messageCreated', 'messageDeleted',
-  'voiceParticipants', 'callIncoming', 'callAccepted', 'callDeclined', 'callCancelled', 'callEnded',
+  'directMessageCreated', 'directMessageDeleted',
+  'voiceParticipants', 'userUpdated', 'callIncoming', 'callAccepted', 'callDeclined', 'callCancelled', 'callEnded',
 ] as const
 
 /** Liga cada evento do servidor ao handler correspondente. */

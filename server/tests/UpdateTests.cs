@@ -17,16 +17,36 @@ public class UpdateTests
     {
         var factory = new ApiFactory();
         factory.CreateClient().Dispose(); // sobe o servidor, que cria a pasta
-        if (published is not null)
-        {
-            var folder = Path.Combine(factory.DataRoot, "updates");
-            File.WriteAllText(Path.Combine(folder, $"Resenha-Setup-{published}.exe"), "instalador falso");
-            File.WriteAllText(Path.Combine(folder, $"Resenha-Setup-{published}.exe.blockmap"), "0123456789");
-            File.WriteAllText(Path.Combine(folder, "notas.txt"), "não deve ser servido");
-            File.WriteAllText(Path.Combine(folder, "latest.yml"),
-                $"version: {published}\nfiles:\n  - url: Resenha-Setup-{published}.exe\n    version: 9.9.9\npath: Resenha-Setup-{published}.exe\n");
-        }
+        if (published is not null) Publish(factory, published);
         return factory;
+    }
+
+    private static void Publish(ApiFactory factory, string version)
+    {
+        var folder = Path.Combine(factory.DataRoot, "updates");
+        File.WriteAllText(Path.Combine(folder, $"Resenha-Setup-{version}.exe"), "instalador falso");
+        File.WriteAllText(Path.Combine(folder, $"Resenha-Setup-{version}.exe.blockmap"), "0123456789");
+        File.WriteAllText(Path.Combine(folder, "notas.txt"), "não deve ser servido");
+        File.WriteAllText(Path.Combine(folder, "latest.yml"),
+            $"version: {version}\nfiles:\n  - url: Resenha-Setup-{version}.exe\n    version: 9.9.9\npath: Resenha-Setup-{version}.exe\n");
+    }
+
+    [Theory]
+    [InlineData("GET", "/dms")]
+    [InlineData("PUT", "/me/username")]
+    [InlineData("GET", "/me/status")]
+    public async Task Rotas_logadas_tambem_barram_app_desatualizado(string method, string path)
+    {
+        using var factory = StartApi();
+        var (client, _) = await factory.CreateLoggedUserAsync(); // conta criada antes de publicar a versão
+        Publish(factory, "0.2.0");
+        var request = new HttpRequestMessage(new HttpMethod(method), path);
+        request.Headers.Add(Header, "0.1.0");
+        if (method == "PUT") request.Content = JsonContent.Create(new { username = "novo_nome" });
+
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.UpgradeRequired, response.StatusCode);
     }
 
     private static HttpClient Client(ApiFactory factory, string? version)

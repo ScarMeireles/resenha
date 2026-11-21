@@ -1,5 +1,7 @@
 import { join } from 'node:path'
 import { app, BrowserWindow, nativeTheme, shell } from 'electron'
+import { popoutWindowOptions, registerPopoutHandlers, trackPopout } from './popout'
+import { isPopoutName } from './popoutName'
 import { registerScreenHandlers } from './screen'
 import { registerScreenAudioHandlers } from './screenAudio'
 import { registerSessionHandlers } from './session'
@@ -33,11 +35,14 @@ function createWindow(): void {
 
   mainWindow.once('ready-to-show', () => mainWindow?.show())
 
-  // Links externos abrem no navegador; a janela do app nunca sai do próprio app.
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  // Links externos abrem no navegador; a janela do app nunca sai do próprio app. A única janela que abre é a
+  // separada da transmissão (about:blank, desenhada pela própria janela principal; ver popout.ts).
+  mainWindow.webContents.setWindowOpenHandler(({ url, frameName }) => {
+    if (url === 'about:blank' && isPopoutName(frameName)) return { action: 'allow', overrideBrowserWindowOptions: popoutWindowOptions() }
     if (url.startsWith('https://')) void shell.openExternal(url)
     return { action: 'deny' }
   })
+  trackPopout(mainWindow)
   mainWindow.webContents.on('will-navigate', (event, url) => {
     if (url !== mainWindow?.webContents.getURL()) event.preventDefault()
   })
@@ -58,6 +63,7 @@ app.whenReady().then(() => {
   registerScreenHandlers(() => mainWindow?.getMediaSourceId() ?? null)
   registerScreenAudioHandlers()
   registerUpdateHandlers()
+  registerPopoutHandlers()
   createWindow()
 })
 

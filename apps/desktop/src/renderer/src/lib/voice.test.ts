@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { deviceArgs, formatDuration,formatScreenLabel, micEnabled, pickStage, toParticipantViews, type MicPrefs, type ParticipantView, type RawParticipant } from './voice'
 
 const raw = (identity: string, extra: Partial<RawParticipant> = {}): RawParticipant => ({
-  identity, isLocal: false, isSpeaking: false, isMicrophoneEnabled: true, cameraTrack: null, screenTrack: null, hasScreenAudio: false, ...extra,
+  identity, isLocal: false, isSpeaking: false, isMicrophoneEnabled: true, cameraTrack: null, screenTrack: null, hasScreenAudio: false, screenAudioPublished: false, ...extra,
 })
 
 describe('toParticipantViews', () => {
@@ -87,7 +87,7 @@ describe('formatScreenLabel', () => {
 
 describe('pickStage', () => {
   const view = (id: string, extra: Partial<ParticipantView> = {}): ParticipantView => ({
-    id, isLocal: false, isSpeaking: false, isMuted: false, camera: null, screen: null, screenAudio: false, ...extra,
+    id, isLocal: false, isSpeaking: false, isMuted: false, camera: null, screen: null, screenAudio: false, screenAudioPublished: false, ...extra,
   })
   const screen = {} as Track
 

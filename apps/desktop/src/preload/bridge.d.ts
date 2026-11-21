@@ -44,6 +44,11 @@ export interface ResenhaBridge {
     /** Progresso do download. Devolve a função que cancela a assinatura. */
     onProgress(listener: (progress: UpdateProgress) => void): () => void
   }
+  /** Janela separada da transmissão (aberta pela tela com window.open). */
+  popout: {
+    /** Alfinete: deixa a janela separada sempre por cima das outras, ou volta ao normal. */
+    setAlwaysOnTop(on: boolean): Promise<void>
+  }
 }
 
 declare global {

@@ -24,6 +24,9 @@ const bridge: ResenhaBridge = {
     run: (reason) => ipcRenderer.invoke('updates:run', reason),
     onProgress: (listener) => subscribe('updates:progress', (_event, progress: UpdateProgress) => listener(progress)),
   },
+  popout: {
+    setAlwaysOnTop: (on) => ipcRenderer.invoke('popout:always-on-top', on),
+  },
 }
 
 /** Assina um evento do main e devolve a função que cancela; a tela nunca recebe o `event` do Electron. */

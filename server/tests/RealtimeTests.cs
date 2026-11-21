@@ -160,7 +160,7 @@ public class RealtimeTests(ApiFactory factory) : IClassFixture<ApiFactory>, IAsy
         var group = await GroupTestHelpers.CreateGroup(a, "G", authB.User.Id);
         var connection = CreateConnection(authB.Token);
         var received = Expect<MessageDto>(connection, "messageCreated");
-        await connection.StartAsync();
+        await LiveKitTestHelpers.StartAndWait(factory, connection, authB.User.Id); // StartAsync volta antes de entrar nos grupos
 
         var sent = await GroupTestHelpers.Send(a, group.Id, "oi");
 
@@ -178,7 +178,7 @@ public class RealtimeTests(ApiFactory factory) : IClassFixture<ApiFactory>, IAsy
         var sent = await GroupTestHelpers.Send(a, group.Id, "oi");
         var connection = CreateConnection(authB.Token);
         var deleted = Expect<JsonElement>(connection, "messageDeleted");
-        await connection.StartAsync();
+        await LiveKitTestHelpers.StartAndWait(factory, connection, authB.User.Id);
 
         (await a.DeleteAsync($"/groups/{group.Id}/messages/{sent.Id}")).EnsureSuccessStatusCode();
 
@@ -211,18 +211,22 @@ public class RealtimeTests(ApiFactory factory) : IClassFixture<ApiFactory>, IAsy
         var (a, _) = await factory.CreateLoggedUserAsync();
         var (_, authB) = await GroupTestHelpers.FriendOf(factory, a);
         var group = await GroupTestHelpers.CreateGroup(a, "G", authB.User.Id);
+        var other = await GroupTestHelpers.CreateGroup(a, "Outro", authB.User.Id); // B continua nele
         var connection = CreateConnection(authB.Token);
         var removed = Expect<JsonElement>(connection, "groupRemoved");
-        var messages = new List<MessageDto>();
-        connection.On<MessageDto>("messageCreated", messages.Add);
+        var first = Expect<MessageDto>(connection, "messageCreated");
+        // Sem esperar o servidor terminar de abrir a conexão: a remoção pode cair no meio da entrada nos grupos,
+        // e mesmo assim B tem de sair de G.
         await connection.StartAsync();
 
         (await a.DeleteAsync($"/groups/{group.Id}/members/{authB.User.Id}")).EnsureSuccessStatusCode();
         Assert.Equal(group.Id, (await removed).GetProperty("groupId").GetGuid());
+        await LiveKitTestHelpers.WaitConnected(factory, authB.User.Id); // garante que já entrou no "Outro"
         await GroupTestHelpers.Send(a, group.Id, "ninguém ouve");
-        await Task.Delay(500);
+        await GroupTestHelpers.Send(a, other.Id, "marcador");
 
-        Assert.Empty(messages);
+        // A conexão recebe na ordem em que o servidor enviou: se "ninguém ouve" vazasse, chegaria antes do marcador.
+        Assert.Equal("marcador", (await first).Text);
     }
 
     [Fact]
