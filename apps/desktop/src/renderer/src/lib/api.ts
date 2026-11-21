@@ -1,5 +1,7 @@
 /** Cliente da API do Resenha. Os tipos espelham server/api (AuthResponse, UserDto). */
 
+import { appVersion, notifyUpgradeRequired, UPGRADE_REQUIRED, VERSION_HEADER } from './appVersion'
+
 export const apiUrl: string = import.meta.env.VITE_API_URL
 
 export interface User {
@@ -57,7 +59,7 @@ export async function toApiError(response: Response): Promise<ApiError> {
 
 /** Chamada genérica à API. Exportada para os módulos de cada área (ex.: amigos). Respostas 204 voltam como undefined. */
 export async function request<T>(method: string, path: string, options: { token?: string; json?: unknown; body?: FormData; signal?: AbortSignal } = {}): Promise<T> {
-  const headers: Record<string, string> = {}
+  const headers: Record<string, string> = { [VERSION_HEADER]: appVersion }
   if (options.token) headers['Authorization'] = `Bearer ${options.token}`
   if (options.json !== undefined) headers['Content-Type'] = 'application/json'
 
@@ -73,6 +75,7 @@ export async function request<T>(method: string, path: string, options: { token?
     throw new ApiError('Não consegui falar com o servidor. Confira sua internet ou se a API está no ar.', 0)
   }
 
+  if (response.status === UPGRADE_REQUIRED) notifyUpgradeRequired() // versão velha: o App troca para "Atualizando…"
   if (!response.ok) throw await toApiError(response)
   if (response.status === 204) return undefined as T
   return (await response.json()) as T

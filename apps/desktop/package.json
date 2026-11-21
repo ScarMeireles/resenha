@@ -13,6 +13,7 @@
     "test": "vitest run",
     "build:audio": "dotnet publish ../audio-helper/src -c Release -r win-x64 --self-contained -o resources/audio",
     "dist": "npm run build && npm run build:audio && electron-builder --win",
+    "release:local": "node ../../scripts/publicar-versao.mjs",
     "make:icon": "electron scripts/make-icon.cjs"
   },
   "devDependencies": {
@@ -25,6 +26,7 @@
     "@vitejs/plugin-react": "^6.3.0",
     "electron": "^45.4.1",
     "electron-builder": "^26.18.0",
+    "electron-updater": "^6.8.11",
     "electron-vite": "^6.0.0",
     "livekit-client": "^2.24.1",
     "react": "^19.3.1",

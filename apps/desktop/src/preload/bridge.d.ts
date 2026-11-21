@@ -1,6 +1,7 @@
 import type { ScreenAudioChoice, ScreenChoice } from '../main/screenChoice'
+import type { UpdateOutcome, UpdateProgress, UpdateReason } from '../main/updateRules'
 
-export type { ScreenAudioChoice, ScreenChoice }
+export type { ScreenAudioChoice, ScreenChoice, UpdateOutcome, UpdateProgress, UpdateReason }
 
 /** Tela ou janela que dá para compartilhar; `thumbnail` é uma data URL. */
 export interface ScreenSource {
@@ -35,6 +36,13 @@ export interface ResenhaBridge {
     onData(listener: (pcm: Uint8Array) => void): () => void
     /** O ajudante parou sozinho (erro ou aparelho de som sumiu). */
     onEnded(listener: () => void): () => void
+  }
+  /** Atualização obrigatória (R13): baixa e instala sozinho a versão nova publicada no servidor. */
+  updates: {
+    /** Confere e, se houver versão nova, baixa e reinicia o app instalado. Em desenvolvimento não atualiza. */
+    run(reason: UpdateReason): Promise<UpdateOutcome>
+    /** Progresso do download. Devolve a função que cancela a assinatura. */
+    onProgress(listener: (progress: UpdateProgress) => void): () => void
   }
 }
 

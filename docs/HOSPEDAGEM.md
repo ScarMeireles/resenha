@@ -63,14 +63,56 @@ VITE_API_URL=http://SEU-IP-DO-RADMIN:8080
 VITE_LIVEKIT_URL=ws://SEU-IP-DO-RADMIN:7890
 ```
 
-Gere o instalador com `npm run dist` em `apps/desktop` e mande para os amigos. O `npm run dev` continua usando o
-servidor local.
+Gere o instalador com `npm run dist` em `apps/desktop` (ou já publique com `npm run release:local`, seção 5) e mande
+para os amigos. O `npm run dev` continua usando o servidor local. O endereço da API também vira o endereço das
+atualizações automáticas (`/updates`).
 
 ## 4. Amigos
 
 1. Instalar a Radmin VPN e **Rede → Entrar em uma rede existente**, com o nome e a senha que você passou.
 2. Instalar o Resenha pelo instalador.
 3. Deixar o Radmin ligado sempre que for usar o Resenha.
+
+## 5. Publicar uma versão nova
+
+Toda versão nova é **obrigatória**: quem estiver com versão mais velha não consegue usar o Resenha até atualizar.
+Mas ninguém precisa fazer nada: ao abrir, o app baixa e instala a versão nova sozinho (tela "Atualizando…" com
+barra de progresso) e reabre já atualizado. Login e preferências continuam.
+
+**Primeira vez com esse sistema:** quem já tem o Resenha instalado de antes (versão sem atualização automática)
+precisa instalar **uma vez** à mão o instalador gerado abaixo. O app antigo só mostra a mensagem "Há uma versão nova
+do Resenha". Depois disso, todas as próximas versões chegam sozinhas.
+
+Para publicar (no PC de quem hospeda, com o `apps/desktop/.env.production` do passo 3 e o servidor ligado):
+
+```powershell
+cd apps/desktop
+npm run release:local                # 0.1.0 -> 0.1.1 (correção)
+npm run release:local -- --minor     # 0.1.0 -> 0.2.0 (novidade)
+```
+
+O script (`scripts/publicar-versao.mjs`):
+
+1. Sobe a `version` do `apps/desktop/package.json`.
+2. Roda o `npm run dist` (leva alguns minutos). O instalador sai em `apps/desktop/release/`.
+3. Copia o instalador, o `.blockmap` e, por último, o `latest.yml` para a pasta de atualizações do servidor
+   (`deploy/updates`, fora do Git). Assim que o `latest.yml` chega, a API passa a cobrar a versão nova, sem
+   reiniciar nada. Instaladores antigos da pasta são apagados (os `.blockmap` ficam: servem para baixar só o que mudou).
+
+Depois, faça commit da versão nova (`package.json` e `package-lock.json`). Os instaladores nunca vão para o Git.
+
+- **Outra pasta:** defina `RESENHA_UPDATES_DIR` no `deploy/.env` (o script e o Docker leem dali) e rode
+  `docker compose up -d` de novo na pasta `deploy`. Também dá para passar `--destino <pasta>` no script.
+- **Conferir:** `curl.exe http://localhost:8080/version` mostra a versão publicada (`null` = nenhuma, nada é cobrado).
+- **Voltar atrás:** apagar o `latest.yml` da pasta de atualizações para de cobrar a versão. Não dá para "descer" a
+  versão de quem já atualizou; para corrigir, publique uma versão ainda mais nova.
+- **O que a API deixa passar mesmo com app velho:** `/updates`, `/version`, `/health`, as imagens (`/media`) e o
+  aviso do LiveKit. Todo o resto responde **426** com a mensagem de atualizar. Chamada sem a versão (app de antes
+  deste sistema, navegador, curl) conta como desatualizada.
+- **Aviso do Windows:** o app não é assinado (certificado custa dinheiro). A atualização automática não passa pelo
+  SmartScreen e confere o arquivo pelo código `sha512` do `latest.yml`, baixado do seu próprio servidor. O aviso
+  "O Windows protegeu o computador" só aparece quando alguém roda o instalador à mão.
+- Quem estiver com o app aberto na hora da publicação é levado para a atualização na próxima ação que falar com a API.
 
 ## Se algo não conectar
 

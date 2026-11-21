@@ -198,12 +198,13 @@ cd apps/desktop
 npm run dist      # typecheck + build + ajudante de áudio + instalador (precisa do SDK do .NET 10)
 ```
 
-Sai em `apps/desktop/release/Resenha-Setup-<versão>.exe` (~146 MB, quase tudo Electron e o ajudante de áudio; a pasta `release/` fica fora do Git). A configuração está em `apps/desktop/electron-builder.yml`.
+Sai em `apps/desktop/release/Resenha-Setup-<versão>.exe` (~146 MB, quase tudo Electron e o ajudante de áudio; a pasta `release/` fica fora do Git). A configuração está em `apps/desktop/electron-builder.ts` (TypeScript para o endereço das atualizações sair do mesmo `VITE_API_URL` do app). Além do `.exe`, saem `latest.yml` e `.blockmap`, usados pela atualização automática.
 
-- **Atualizar:** basta rodar o instalador novo por cima. Ele reconhece a instalação existente (mesmo `appId`), usa a mesma pasta e mantém login e preferências; não precisa desinstalar. A `version` do `apps/desktop/package.json` deve subir a cada instalador novo.
+- **Atualização automática e obrigatória:** toda versão nova publicada no servidor é obrigatória. Ao abrir, o app confere `<VITE_API_URL>/updates/latest.yml`; se houver versão mais nova, mostra só a tela "Atualizando…" com o progresso, baixa, instala em silêncio e reabre. A API recusa (426) app com versão mais velha que a publicada, e isso também dispara a atualização. Para publicar: `npm run release:local` (sobe a versão, gera o instalador e copia para a pasta de atualizações do servidor). Passo a passo em [docs/HOSPEDAGEM.md](docs/HOSPEDAGEM.md#5-publicar-uma-versão-nova). Em `npm run dev` o app não se atualiza.
+- **Instalar por cima à mão** também funciona: o instalador novo reconhece a instalação existente (mesmo `appId`), usa a mesma pasta e mantém login e preferências.
 - **Instalação:** assistente em que dá para escolher a pasta; por padrão é só para o usuário atual e sem pedir administrador (só pede se a pasta escolhida exigir). A pasta sugerida é `%LOCALAPPDATA%\Programs\resenha-desktop`, com atalhos na Área de Trabalho e no Menu Iniciar. Desinstala pelo "Adicionar ou remover programas" e mantém o login lembrado e as preferências (`%APPDATA%\resenha-desktop`, a mesma pasta do modo de desenvolvimento).
 - **Endereços do servidor:** `VITE_API_URL` e `VITE_LIVEKIT_URL` ficam gravados no app na hora do build. Para um instalador que os amigos vão usar, gere com o `.env` apontando para o seu servidor (`https://` e `wss://`, passo 10). Sem `.env`, o instalador só funciona com a API e o LiveKit na própria máquina.
 - **Aviso do Windows:** o instalador não é assinado (o certificado custa dinheiro), então o SmartScreen mostra "O Windows protegeu o computador" na primeira vez. É só clicar em "Mais informações" → "Executar assim mesmo".
 - **Ícone:** `apps/desktop/build/icon.png`, gerado a partir da marca do app por `npm run make:icon`. Só precisa rodar de novo se a marca mudar.
-- **Releases do GitHub:** o build não publica nada sozinho (`publish: null`). Subir o `.exe` em Releases é manual.
+- **Releases do GitHub:** o build não envia nada para lugar nenhum (o `publish` `generic` só gera o `latest.yml` e grava o endereço no app). Subir o `.exe` em Releases é manual.
 - O pacote leva só o app compilado (`out/`). React, LiveKit e SignalR já vão embutidos pelo Vite, por isso ficam em `devDependencies` e o `node_modules` não entra no instalador.

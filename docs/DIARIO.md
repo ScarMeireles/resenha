@@ -4,6 +4,9 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (atualização obrigatória, branch `feature/atualizacao-obrigatoria`)
+- R13: a API serve `latest.yml` + instalador em `/updates` (pasta fora do Git, `deploy/updates` no servidor), informa a versão em `/version` e responde 426 para app mais velho (cabeçalho `X-Resenha-Version`; no SignalR vai na URL). O app usa electron-updater: ao abrir ou ao receber 426, baixa, mostra "Atualizando…" e reinstala em silêncio. Publicação com `npm run release:local` (`scripts/publicar-versao.mjs`). `electron-builder.yml` virou `electron-builder.ts`; o check-secrets agora barra `.exe`, `.blockmap` e `latest.yml`. Instalado `electron-updater` 6.8.11 (gratuito) como devDependency (no `node_modules` do repo principal, via junction). Testado de verdade com um build isolado (outro appId): 0.1.0 instalado atualizou sozinho para 0.1.1 em ~20 s e reabriu. Sem merge.
+
 ## 20/11/2026 — sessão interativa (API de DM e troca do @, branch `feature/api-dm-e-arroba`)
 - Só servidor (a tela espera os modelos). `PUT /me/username` (token novo; o antigo segue valendo) e mensagens diretas em `/dms`, na mesma tabela `Messages` do grupo (coluna `ConversationId` + tabela `DirectConversations`, migração `ConversasDiretas`). O código comum de enviar/paginar/apagar saiu de `GroupEndpoints` para `Chat/ChatMessages.cs`. Testes: 174 ok (24 novos). Sem merge.
 

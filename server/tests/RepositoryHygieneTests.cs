@@ -11,7 +11,7 @@ public class RepositoryHygieneTests
     private static readonly string[] SourceExtensions = [".cs", ".csproj", ".slnx", ".ts", ".tsx", ".json", ".yml", ".yaml", ".ps1", ".md"];
 
     // Arquivos que DEVEM ficar fora do Git (segredos e saídas de build).
-    private static readonly string[] AllowedIgnored = ["appsettings.Development.json", "/bin/", "/obj/", "/node_modules/", "/.data/", "/dist/", "/out/", "/release/"];
+    private static readonly string[] AllowedIgnored = ["appsettings.Development.json", "/bin/", "/obj/", "/node_modules/", "/.data/", "/dist/", "/out/", "/release/", "/deploy/updates/"];
 
     [Fact]
     public void Nenhum_arquivo_de_codigo_fica_escondido_pelo_gitignore()

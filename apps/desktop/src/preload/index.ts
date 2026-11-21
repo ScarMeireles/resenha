@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import type { UpdateProgress } from '../main/updateRules'
 import type { ResenhaBridge } from './bridge'
 
 // Única ponte entre a tela (React) e o Electron. Expõe só funções pequenas e específicas.
@@ -18,6 +19,10 @@ const bridge: ResenhaBridge = {
     stop: () => ipcRenderer.invoke('screen-audio:stop'),
     onData: (listener) => subscribe('screen-audio:data', (_event, data: Uint8Array) => listener(data)),
     onEnded: (listener) => subscribe('screen-audio:ended', () => listener()),
+  },
+  updates: {
+    run: (reason) => ipcRenderer.invoke('updates:run', reason),
+    onProgress: (listener) => subscribe('updates:progress', (_event, progress: UpdateProgress) => listener(progress)),
   },
 }
 

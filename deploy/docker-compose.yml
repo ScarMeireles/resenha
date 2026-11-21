@@ -18,10 +18,13 @@ services:
       # então o limite de login por IP vale para o grupo inteiro. Como só quem está na rede do Radmin alcança o
       # servidor, o limite fica mais folgado aqui.
       RateLimit__AuthPerMinute: "30"
+      # Atualizações do app (latest.yml + instalador), copiadas pelo scripts/publicar-versao.mjs. Só leitura.
+      Updates__Path: /updates
     ports:
       - "8080:8080"       # API e chat (HTTP + WebSocket do SignalR)
     volumes:
       - api_data:/data    # banco SQLite e imagens
+      - ${RESENHA_UPDATES_DIR:-./updates}:/updates:ro   # pasta de atualizações (padrão: deploy/updates, fora do Git)
     logging: &logs        # logs com rotação e tamanho máximo (3 x 10 MB)
       driver: json-file
       options:

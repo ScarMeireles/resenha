@@ -12,5 +12,5 @@
     "isolatedModules": true,
     "composite": true
   },
-  "include": ["electron.vite.config.mts", "vitest.config.mts", "src/main/**/*", "src/preload/**/*", "src/build/**/*"]
+  "include": ["electron.vite.config.mts", "electron-builder.ts", "vitest.config.mts", "src/main/**/*", "src/preload/**/*", "src/build/**/*"]
 }

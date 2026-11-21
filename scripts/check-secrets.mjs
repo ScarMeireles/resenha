@@ -25,6 +25,8 @@ const FORBIDDEN_PATHS = [
   [/\.(db|db-shm|db-wal|sqlite|sqlite3)$/i, "banco de dados"],
   [/(^|\/)\.data\//, "dados locais (.data/: uploads, fotos)"],
   [/\.(pem|key|pfx|p12)$/i, "chave ou certificado"],
+  [/\.(exe|msi|blockmap)$/i, "instalador ou executável (vai na pasta de atualizações do servidor, fora do Git)"],
+  [/(^|\/)latest\.yml$/i, "latest.yml de atualização (gerado pelo npm run dist)"],
 ];
 
 // 2) Padrões genéricos de segredo no conteúdo.
