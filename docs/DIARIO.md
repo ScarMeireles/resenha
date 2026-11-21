@@ -4,6 +4,12 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 22:13 — execução automática (resenha-continuar)
+- Árvore limpa em `hml` e nenhuma dúvida respondida para aplicar. Uso: 2% (5 h) e 46% (semanal).
+- O que falta no roteiro depende de você: o passo 10 precisa subir o servidor no seu PC e testar com um amigo pelo Radmin (o firewall pede administrador). O passo 11 precisa de push e Releases, que esta automação não pode fazer.
+- Conferido: `docker compose config` do `deploy/` passou sem erro. Nenhum código foi alterado.
+- Parada: nada que a automação possa fazer sozinha. Para continuar, siga `docs/HOSPEDAGEM.md` e teste com um amigo.
+
 ## 20/11/2026 — sessão interativa (passo 10, troca da Oracle pela Radmin VPN)
 - Oracle abandonada: o cadastro pedia dados de empresa, e o provedor do usuário usa CGNAT (não dá para abrir portas). Decisão do usuário: servidor no próprio PC (Docker Desktop) e amigos pela Radmin VPN, aceitando que eles possam ver o IP uns dos outros (R11 atualizada). Branch `feature/passo-10-radmin`.
 - `deploy/`: saíram Caddy, `setup-vm.sh` e `publish.ps1`. O compose agora publica API (8080) e LiveKit (7890 sinalização, 7891 TCP, 7892 UDP), em portas diferentes das do desenvolvimento, e o LiveKit anuncia o IP do Radmin (`--node-ip`). Novos: `new-env.ps1` (lê o IP da placa "Radmin VPN" e gera os segredos) e `firewall.ps1` (libera as portas só nessa placa).
