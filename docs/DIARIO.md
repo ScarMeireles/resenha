@@ -4,6 +4,13 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (passo 10, troca da Oracle pela Radmin VPN)
+- Oracle abandonada: o cadastro pedia dados de empresa, e o provedor do usuário usa CGNAT (não dá para abrir portas). Decisão do usuário: servidor no próprio PC (Docker Desktop) e amigos pela Radmin VPN, aceitando que eles possam ver o IP uns dos outros (R11 atualizada). Branch `feature/passo-10-radmin`.
+- `deploy/`: saíram Caddy, `setup-vm.sh` e `publish.ps1`. O compose agora publica API (8080) e LiveKit (7890 sinalização, 7891 TCP, 7892 UDP), em portas diferentes das do desenvolvimento, e o LiveKit anuncia o IP do Radmin (`--node-ip`). Novos: `new-env.ps1` (lê o IP da placa "Radmin VPN" e gera os segredos) e `firewall.ps1` (libera as portas só nessa placa).
+- API: saiu o `ReverseProxy:Enabled` e os testes dele (sem proxy, ficou sem uso). No Docker Desktop a API não vê o IP de cada amigo, então o limite de login por IP ficou em 30/min no compose do servidor. Testes: 149 ok.
+- Docs atualizados: `HOSPEDAGEM.md` reescrito, README, CLAUDE.md, `.env.example`. Também saiu o padrão de OCID da Oracle do `check-secrets.mjs`.
+- **Não testado ainda:** subir o compose do servidor e conectar um amigo pelo Radmin.
+
 ## 20/11/2026 — sessão interativa (passo 10, arquivos de deploy)
 - D6 respondida (opção A, agora R11). Branch `feature/passo-10-hospedagem`.
 - `deploy/`: `docker-compose.yml` com Caddy (HTTPS automático do Let's Encrypt), API e LiveKit num endereço só (`/rtc*` vai para o LiveKit, o resto para a API); `livekit.yaml` com `use_external_ip` (o IP não fica escrito em lugar nenhum); `setup-vm.sh` (Docker, iptables e `.env` com segredos gerados na própria VM); `publish.ps1` (envia o último commit por `git archive` + scp/ssh, sem depender de push).

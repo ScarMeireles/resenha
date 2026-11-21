@@ -1,4 +1,4 @@
-# Imagem da API para o servidor real (deploy/docker-compose.yml). Funciona em x64 e em ARM (VM Ampere da Oracle).
+# Imagem da API para o servidor real (deploy/docker-compose.yml). Funciona em x64 e em ARM.
 # Etapa 1: compila. Etapa 2: só o runtime, menor e sem o SDK.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
