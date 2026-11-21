@@ -3,6 +3,7 @@ import { emptyFriends, friendsApi, friendsReducer } from '../lib/friends'
 import { groupsApi, groupsReducer, messagesReducer, reloadVoice, voiceReducer, type GroupDto, type MessagesState, type VoiceState } from '../lib/groups'
 import { createRealtime, type RealtimeHandlers } from '../lib/realtime'
 import { missedCallsApi, type MissedCallDto } from '../lib/missedCalls'
+import type { User } from '../lib/api'
 
 /** Eventos de chamada, tratados por useCall. */
 export type CallEvents = Pick<RealtimeHandlers, 'callIncoming' | 'callAccepted' | 'callDeclined' | 'callCancelled' | 'callEnded'>
@@ -13,11 +14,13 @@ const RETRY_MS = 5000
  * Dados do app todo (amigos, grupos e mensagens) numa conexão SignalR só.
  * Carrega pela API e se mantém atualizado pelos eventos. Liga quando há token e desliga ao sair (desmonta).
  */
-export function useRealtime(token: string, callEvents: CallEvents) {
+export function useRealtime(token: string, callEvents: CallEvents, onUserUpdated?: (user: User) => void) {
   const [voice, dispatchVoice] = useReducer(voiceReducer, {} as VoiceState)
   // Sempre o handler mais recente, sem religar a conexão a cada render.
   const callEventsRef = useRef(callEvents)
   callEventsRef.current = callEvents
+  const onUserUpdatedRef = useRef(onUserUpdated)
+  onUserUpdatedRef.current = onUserUpdated
   const [friends, dispatchFriends] = useReducer(friendsReducer, emptyFriends)
   const [groups, dispatchGroups] = useReducer(groupsReducer, [] as GroupDto[])
   const [messages, dispatchMessages] = useReducer(messagesReducer, {} as MessagesState)
@@ -71,6 +74,13 @@ export function useRealtime(token: string, callEvents: CallEvents) {
       messageCreated: (message) => dispatchMessages({ type: 'created', message }),
       messageDeleted: ({ groupId, messageId }) => dispatchMessages({ type: 'deleted', groupId, messageId }),
       voiceParticipants: ({ groupId, userIds }) => dispatchVoice({ groupId, userIds }),
+      // Alguém mudou nome, foto, banner ou @: troca em amigos, pedidos, membros e mensagens já carregadas.
+      userUpdated: (user) => {
+        dispatchFriends({ type: 'userUpdated', user })
+        dispatchGroups({ type: 'userUpdated', user })
+        dispatchMessages({ type: 'userUpdated', user })
+        onUserUpdatedRef.current?.(user)
+      },
       callIncoming: (payload) => callEventsRef.current.callIncoming(payload),
       callAccepted: (payload) => callEventsRef.current.callAccepted(payload),
       callDeclined: (payload) => callEventsRef.current.callDeclined(payload),

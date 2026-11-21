@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Resenha.Api.Auth;
 using Resenha.Api.Data;
 using Resenha.Api.Media;
+using Resenha.Api.Realtime;
 
 namespace Resenha.Api.Accounts;
 
@@ -29,13 +30,13 @@ public static class AccountEndpoints
 
     private static void MapImage(RouteGroupBuilder me, string route, MediaKind kind)
     {
-        me.MapPut(route, (IFormFile file, HttpContext http, AppDbContext db, ImageProcessor images, MediaStorage storage, CancellationToken ct) =>
-                UploadImage(kind, file, http, db, images, storage, ct))
+        me.MapPut(route, (IFormFile file, HttpContext http, AppDbContext db, ImageProcessor images, MediaStorage storage, UserNotifier notifier, CancellationToken ct) =>
+                UploadImage(kind, file, http, db, images, storage, notifier, ct))
             .DisableAntiforgery() // a API usa token no cabeçalho, não cookie: não há risco de CSRF
             .WithMetadata(new RequestSizeLimitAttribute(MaxRequestBytes));
 
-        me.MapDelete(route, (HttpContext http, AppDbContext db, MediaStorage storage) =>
-            DeleteImage(kind, http, db, storage));
+        me.MapDelete(route, (HttpContext http, AppDbContext db, MediaStorage storage, UserNotifier notifier) =>
+            DeleteImage(kind, http, db, storage, notifier));
     }
 
     private static async Task<IResult> GetMe(HttpContext http, AppDbContext db)
@@ -44,7 +45,7 @@ public static class AccountEndpoints
         return user is null ? Results.Unauthorized() : Results.Ok(UserDto.From(user));
     }
 
-    private static async Task<IResult> UpdateMe(UpdateMeRequest request, HttpContext http, AppDbContext db)
+    private static async Task<IResult> UpdateMe(UpdateMeRequest request, HttpContext http, AppDbContext db, UserNotifier notifier)
     {
         var user = await db.Users.FindAsync(http.User.GetUserId());
         if (user is null) return Results.Unauthorized();
@@ -57,7 +58,9 @@ public static class AccountEndpoints
             user.DisplayName = displayName;
         }
 
+        var changed = db.ChangeTracker.HasChanges();
         await db.SaveChangesAsync();
+        if (changed) await notifier.Updated(user);
         return Results.Ok(UserDto.From(user));
     }
 
@@ -66,7 +69,7 @@ public static class AccountEndpoints
     /// apontam para o Id, então nada quebra. Devolve um token novo com o @ atualizado; o antigo continua
     /// valendo, porque a sessão é identificada pelo Id e pelo carimbo de segurança, que não mudam.
     /// </summary>
-    private static async Task<IResult> ChangeUsername(ChangeUsernameRequest request, HttpContext http, AppDbContext db, TokenService tokens)
+    private static async Task<IResult> ChangeUsername(ChangeUsernameRequest request, HttpContext http, AppDbContext db, TokenService tokens, UserNotifier notifier)
     {
         var user = await db.Users.FindAsync(http.User.GetUserId());
         if (user is null) return Results.Unauthorized();
@@ -91,6 +94,7 @@ public static class AccountEndpoints
                     return AuthEndpoints.UsernameTaken();
                 throw;
             }
+            await notifier.Updated(user);
         }
 
         var (token, expiresAt) = tokens.Create(user);
@@ -108,7 +112,7 @@ public static class AccountEndpoints
 
     private static async Task<IResult> UploadImage(
         MediaKind kind, IFormFile file, HttpContext http, AppDbContext db,
-        ImageProcessor images, MediaStorage storage, CancellationToken ct)
+        ImageProcessor images, MediaStorage storage, UserNotifier notifier, CancellationToken ct)
     {
         var user = await db.Users.FindAsync([http.User.GetUserId()], ct);
         if (user is null) return Results.Unauthorized();
@@ -135,10 +139,11 @@ public static class AccountEndpoints
 
         await db.SaveChangesAsync(ct);
         storage.Delete(kind, oldFile); // só apaga a antiga depois que o banco já aponta para a nova
+        await notifier.Updated(user);
         return Results.Ok(UserDto.From(user));
     }
 
-    private static async Task<IResult> DeleteImage(MediaKind kind, HttpContext http, AppDbContext db, MediaStorage storage)
+    private static async Task<IResult> DeleteImage(MediaKind kind, HttpContext http, AppDbContext db, MediaStorage storage, UserNotifier notifier)
     {
         var user = await db.Users.FindAsync(http.User.GetUserId());
         if (user is null) return Results.Unauthorized();
@@ -146,8 +151,11 @@ public static class AccountEndpoints
         var oldFile = kind == MediaKind.Avatar ? user.AvatarFile : user.BannerFile;
         if (kind == MediaKind.Avatar) user.AvatarFile = null; else user.BannerFile = null;
 
+        if (oldFile is null) return Results.Ok(UserDto.From(user)); // já não tinha imagem: nada muda
+
         await db.SaveChangesAsync();
         storage.Delete(kind, oldFile);
+        await notifier.Updated(user);
         return Results.Ok(UserDto.From(user));
     }
 }

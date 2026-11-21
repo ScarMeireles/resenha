@@ -42,6 +42,17 @@ export function App() {
     setState({ kind: 'signedIn', token: auth.token, user: auth.user, notice })
   }, [])
 
+  /**
+   * Meus dados mudaram (cartão de perfil ou outra janela). Na troca de @ a API manda um token novo: ele vai
+   * para a sessão salva (é o que o app usa ao abrir de novo). O token em memória continua o mesmo de propósito:
+   * os dois valem (a sessão é pelo Id e pelo carimbo de segurança, não pelo @) e trocá-lo religaria o tempo
+   * real e derrubaria uma chamada em andamento.
+   */
+  const updateAccount = useCallback(async (user: User, newToken?: string) => {
+    if (newToken) await window.resenha.session.save(newToken)
+    setState((s) => (s.kind === 'signedIn' ? { ...s, user } : s))
+  }, [])
+
   const signOut = useCallback(async () => {
     await window.resenha.session.clear()
     setState({ kind: 'signedOut' })
@@ -67,6 +78,6 @@ export function App() {
     case 'signedOut':
       return <AuthScreen onAuthenticated={signIn} />
     case 'signedIn':
-      return <Shell user={state.user} token={state.token} notice={state.notice} onSignOut={signOut} />
+      return <Shell user={state.user} token={state.token} notice={state.notice} onSignOut={signOut} onAccountChange={updateAccount} />
   }
 }

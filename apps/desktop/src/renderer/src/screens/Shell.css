@@ -171,16 +171,6 @@
 .user-menu-item:hover, .user-menu-item:focus-visible { background: var(--bg-hover); }
 .user-menu-item--danger { color: var(--red); }
 
-/* Menu de status (clicar no próprio avatar) */
-.user-menu-status { align-items: flex-start; }
-.user-menu-status-text { display: flex; flex-direction: column; gap: 2px; text-align: left; }
-.user-menu-hint { font-size: 12px; color: var(--text-faint); }
-.user-menu-status[aria-checked="true"] { background: var(--bg-chip); }
-.status-dot { flex: none; width: 10px; height: 10px; margin-top: 4px; border-radius: 50%; box-sizing: border-box; }
-.status-dot--online { background: var(--green); }
-.status-dot--away { background: var(--yellow); }
-.status-dot--offline { border: 2px solid var(--text-faint); }
-
 /* --- Conteúdo --- */
 .content { display: flex; flex-direction: column; min-width: 0; }
 .content-header { gap: 10px; padding: 0 20px; color: var(--text-faint); }

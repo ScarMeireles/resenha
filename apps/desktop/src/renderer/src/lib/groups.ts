@@ -1,5 +1,6 @@
 import { request, type User } from './api'
 import type { Presence } from './presence'
+import { replaceUser } from './users'
 
 /** Tipos, chamadas e estado de grupos e mensagens. Espelham server/api (GroupDto, MessageDto...). */
 
@@ -126,6 +127,7 @@ export type GroupsAction =
   | { type: 'updated'; group: GroupDto }
   | { type: 'removed'; groupId: string }
   | { type: 'presenceChanged'; userId: string; presence: Presence }
+  | { type: 'userUpdated'; user: User }
 
 const upsertGroup = (list: GroupDto[], group: GroupDto) =>
   list.some((g) => g.id === group.id) ? list.map((g) => (g.id === group.id ? group : g)) : [group, ...list]
@@ -145,6 +147,16 @@ export function groupsReducer(state: GroupDto[], action: GroupsAction): GroupDto
           ? { ...g, members: g.members.map((m) => (m.user.id === action.userId ? { ...m, presence: action.presence } : m)) }
           : g,
       )
+    case 'userUpdated': {
+      let changed = false
+      const next = state.map((g) => {
+        const members = replaceUser(g.members, action.user)
+        if (members === g.members) return g
+        changed = true
+        return { ...g, members }
+      })
+      return changed ? next : state
+    }
   }
 }
 
@@ -164,6 +176,7 @@ export type MessagesAction =
   | { type: 'created'; message: MessageDto }
   | { type: 'deleted'; groupId: string; messageId: string }
   | { type: 'cleared'; groupId: string }
+  | { type: 'userUpdated'; user: User }
 
 /** Junta sem duplicar pelo id (o novo vence) e ordena por data (estável: empate mantém a ordem). */
 function mergeMessages(current: MessageDto[], incoming: MessageDto[]): MessageDto[] {
@@ -212,6 +225,20 @@ export function messagesReducer(state: MessagesState, action: MessagesAction): M
       const rest = { ...state }
       delete rest[action.groupId]
       return rest
+    }
+    case 'userUpdated': {
+      // As mensagens já carregadas passam a mostrar o nome/foto novos do autor.
+      let changed = false
+      const next: MessagesState = {}
+      for (const [groupId, chat] of Object.entries(state)) {
+        if (!chat.items.some((m) => m.author.id === action.user.id)) {
+          next[groupId] = chat
+          continue
+        }
+        changed = true
+        next[groupId] = { ...chat, items: chat.items.map((m) => (m.author.id === action.user.id ? { ...m, author: action.user } : m)) }
+      }
+      return changed ? next : state
     }
   }
 }

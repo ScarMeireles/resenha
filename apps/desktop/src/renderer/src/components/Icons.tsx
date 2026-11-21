@@ -79,3 +79,8 @@ export const HeadphonesOffIcon = (p: P) => (
 export const PhoneOffIcon = (p: P) => (
   <Icon {...p}><path d="M10.7 13.3a16 16 0 002.9 2.2l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.4 19.4 0 01-3.3-2.6M6.1 9.7A19.8 19.8 0 013.1 4.2 2 2 0 015.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L9.1 9.9M1 1l22 22" /></Icon>
 )
+export const ImageIcon = (p: P) => (
+  <Icon {...p}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></Icon>
+)
+/** Lua cheia (preenchida): o indicador de "Ausente". */
+export const MoonIcon = (p: P) => <Icon {...p}><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z" fill="currentColor" /></Icon>
