@@ -79,3 +79,22 @@ export const HeadphonesOffIcon = (p: P) => (
 export const PhoneOffIcon = (p: P) => (
   <Icon {...p}><path d="M10.7 13.3a16 16 0 002.9 2.2l1.3-1.3a2 2 0 012.1-.4c.9.3 1.8.6 2.8.7a2 2 0 011.7 2v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.4 19.4 0 01-3.3-2.6M6.1 9.7A19.8 19.8 0 013.1 4.2 2 2 0 015.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L9.1 9.9M1 1l22 22" /></Icon>
 )
+export const VolumeMuteIcon = (p: P) => <Icon {...p}><path d="M11 5L6 9H2v6h4l5 4zM22 9l-6 6M16 9l6 6" /></Icon>
+export const ChevronUpIcon = (p: P) => <Icon {...p}><path d="M6 15l6-6 6 6" /></Icon>
+export const SwapIcon = (p: P) => (
+  <Icon {...p}><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3" /></Icon>
+)
+export const StopIcon = (p: P) => <Icon {...p}><rect x="5" y="5" width="14" height="14" rx="2" /></Icon>
+export const FullscreenIcon = (p: P) => (
+  <Icon {...p}><path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M16 21h3a2 2 0 002-2v-3" /></Icon>
+)
+export const FullscreenExitIcon = (p: P) => (
+  <Icon {...p}><path d="M8 3v3a2 2 0 01-2 2H3M21 8h-3a2 2 0 01-2-2V3M3 16h3a2 2 0 012 2v3M16 21v-3a2 2 0 012-2h3" /></Icon>
+)
+export const PopoutIcon = (p: P) => (
+  <Icon {...p}><path d="M15 3h6v6M10 14L21 3M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /></Icon>
+)
+export const PopinIcon = (p: P) => (
+  <Icon {...p}><rect x="3" y="3" width="18" height="18" rx="2" /><rect x="12" y="12" width="6" height="5" rx="1" fill="currentColor" /></Icon>
+)
+export const PinIcon = (p: P) => <Icon {...p}><path d="M12 17v5M9 3h6l-1 7 4 4H6l4-4z" /></Icon>

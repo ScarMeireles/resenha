@@ -155,3 +155,6 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ## 20/11/2026 - instalador com escolha de pasta
 - electron-builder.yml: NSIS virou assistente (oneClick false, allowToChangeInstallationDirectory true), mesmo appId, perMachine false. README explica como atualizar. Branch feature/instalador-pasta.
+
+## 20/11/2026 - controles da transmissão (branch feature/controles-transmissao)
+- Caixinha do botão da tela (qualidade aplicada na hora e salva como padrão, "Som da tela", trocar fonte com replaceTrack, parar), barra de quem assiste (volume 0-200% por pessoa, AO VIVO, janela separada, tela cheia), menu do botão direito com volume da voz por pessoa e janela separada (window.open about:blank + portal, alfinete "sempre por cima"). Áudio recebido via webAudioMix do LiveKit (GainNode). Testes: app 202; build OK; janela separada conferida no app empacotado por CDP (CSP, estilos, vídeo, alfinete, nomes negados). Sem teste com duas pessoas: a API local que estava no ar é de outra branch (pede versão 0.1.1). Sem merge.

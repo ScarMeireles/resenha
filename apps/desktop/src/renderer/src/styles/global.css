@@ -21,6 +21,7 @@
   --green: #3ddc97;
   --yellow: #f5c04a; /* status Ausente */
   --red: #ff7a7a;
+  --danger: #e5484d; /* botões de parar/sair e o selo AO VIVO */
 
   --font-body: 'Inter Variable', Inter, system-ui, sans-serif;
   --font-title: 'Space Grotesk', var(--font-body);

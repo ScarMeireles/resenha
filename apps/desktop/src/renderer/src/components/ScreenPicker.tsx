@@ -8,12 +8,14 @@ import { Modal } from './Modal'
 import './ScreenPicker.css'
 
 interface Props {
+  /** 'swap' = "Trocar tela ou janela" durante um compartilhamento (muda só o título e o botão). */
+  mode?: 'start' | 'swap'
   onCancel(): void
-  onConfirm(sourceId: string, audio: ScreenAudioChoice): void
+  onConfirm(source: ScreenSource, audio: ScreenAudioChoice): void
 }
 
 /** Escolha do que compartilhar: telas ou janelas, com miniaturas, e o som que vai junto (nenhum, todo, ou todo menos alguns apps). */
-export function ScreenPicker({ onCancel, onConfirm }: Props) {
+export function ScreenPicker({ mode = 'start', onCancel, onConfirm }: Props) {
   const [sources, setSources] = useState<ScreenSource[] | null>(null)
   const [error, setError] = useState(false)
   const [tab, setTab] = useState<ScreenTab>('screen')
@@ -37,16 +39,17 @@ export function ScreenPicker({ onCancel, onConfirm }: Props) {
   const toggleApp = (exe: string, on: boolean) =>
     setAudio((a) => ({ ...a, exes: on ? [...a.exes, exe] : a.exes.filter((e) => e !== exe) }))
   const confirm = () => {
-    if (!selected) return
+    const source = sources?.find((s) => s.id === selected)
+    if (!source) return
     saveScreenAudioPrefs(window.localStorage, audio)
-    onConfirm(selected, toAudioChoice(audio))
+    onConfirm(source, toAudioChoice(audio))
   }
 
   const visible = sources ? filterSources(sources, tab) : []
   const chooseTab = (t: ScreenTab) => { setTab(t); setSelected(null) }
 
   return (
-    <Modal title="Compartilhar tela" onClose={onCancel}>
+    <Modal title={mode === 'swap' ? 'Trocar tela ou janela' : 'Compartilhar tela'} onClose={onCancel}>
       <div className="screen-tabs" role="tablist">
         <button type="button" role="tab" aria-selected={tab === 'screen'} className="screen-tab" onClick={() => chooseTab('screen')}>Telas</button>
         <button type="button" role="tab" aria-selected={tab === 'window'} className="screen-tab" onClick={() => chooseTab('window')}>Janelas</button>
@@ -112,7 +115,7 @@ export function ScreenPicker({ onCancel, onConfirm }: Props) {
 
       <div className="modal-actions">
         <button type="button" className="modal-cancel" onClick={onCancel}>Cancelar</button>
-        <button type="button" className="modal-confirm" disabled={!selected} onClick={confirm}>Compartilhar</button>
+        <button type="button" className="modal-confirm" disabled={!selected} onClick={confirm}>{mode === 'swap' ? 'Trocar' : 'Compartilhar'}</button>
       </div>
     </Modal>
   )

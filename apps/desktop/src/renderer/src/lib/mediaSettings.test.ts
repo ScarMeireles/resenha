@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildRoomOptions, buildScreenAudioPublish, buildScreenShareOptions, DEFAULT_MEDIA_SETTINGS, loadMediaSettings, MEDIA_SETTINGS_KEY, saveMediaSettings,
-  type MediaSettings,
+  screenQualitySummary, screenVideoConstraints, type MediaSettings,
 } from './mediaSettings'
 
 const store = (value: string | null) => ({ getItem: (k: string) => (k === MEDIA_SETTINGS_KEY ? value : null) })
@@ -80,5 +80,32 @@ describe('buildScreenShareOptions', () => {
     expect(buildScreenShareOptions(settings(), true).publish).toMatchObject({ audioPreset: { maxBitrate: 96_000 }, dtx: false, red: false, forceStereo: true })
     expect(buildScreenAudioPublish(settings({ quality: 'economia' })).audioPreset.maxBitrate).toBe(64_000)
     expect(buildScreenAudioPublish(settings({ quality: 'alta' })).audioPreset.maxBitrate).toBe(128_000)
+  })
+})
+
+describe('qualidade da tela (caixinha do compartilhamento)', () => {
+  it('resume o que cada nível manda', () => {
+    expect(screenQualitySummary('economia')).toBe('720p · 15 fps')
+    expect(screenQualitySummary('normal')).toBe('1080p · 30 fps')
+    expect(screenQualitySummary('alta')).toBe('1080p · 60 fps')
+  })
+
+  it('restrições da captura seguem o nível: tamanho como ideal e o fps do nível', () => {
+    expect(screenVideoConstraints('economia')).toEqual({ width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: 15 })
+    expect(screenVideoConstraints('normal')).toEqual({ width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: 30 })
+    expect(screenVideoConstraints('alta')).toEqual({ width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: 60 })
+  })
+
+  it('a captura e a codificação usam o mesmo fps (sem capturar quadros que o codificador descarta)', () => {
+    for (const quality of ['economia', 'normal', 'alta'] as const) {
+      const { capture, publish } = buildScreenShareOptions(settings({ quality }), false)
+      expect(capture.resolution.frameRate).toBe(publish.screenShareEncoding.maxFramerate)
+    }
+  })
+
+  it('o áudio recebido passa pelo Web Audio (volume acima de 100%) e o vídeo não pausa com a janela escondida', () => {
+    const o = buildRoomOptions(DEFAULT_MEDIA_SETTINGS)
+    expect(o.webAudioMix).toBe(true)
+    expect(o.adaptiveStream).toEqual({ pauseVideoInBackground: false })
   })
 })

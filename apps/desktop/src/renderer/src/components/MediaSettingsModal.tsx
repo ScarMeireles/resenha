@@ -76,7 +76,7 @@ export function MediaSettingsModal({ settings, onChange, onClose }: Props) {
             </span>
           </label>
         ))}
-        <p className="media-note">A qualidade nova vale na próxima vez que você ligar a câmera ou a tela.</p>
+        <p className="media-note">Na tela que você está compartilhando, a qualidade nova vale na hora; na câmera, na próxima vez que você ligar.</p>
       </fieldset>
 
       <div className="modal-actions">
