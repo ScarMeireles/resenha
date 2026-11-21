@@ -82,7 +82,8 @@ export const QUALITY_PRESETS: Record<QualityPreset, QualityConfig> = {
     audio: { maxBitrate: 32_000 },
     screenAudio: { maxBitrate: 64_000 },
     camera: { resolution: VideoPresets.h360.resolution, encoding: VideoPresets.h360.encoding, layers: [VideoPresets.h180] },
-    screen: { resolution: VideoPresets.h720.resolution, encoding: ScreenSharePresets.h720fps15.encoding, layers: [] },
+    // Captura já a 15 fps: capturar a 30 para o codificador jogar metade fora só gastaria CPU.
+    screen: { resolution: { ...VideoPresets.h720.resolution, frameRate: 15 }, encoding: ScreenSharePresets.h720fps15.encoding, layers: [] },
   },
   normal: {
     label: 'Normal',
@@ -106,11 +107,32 @@ export const QUALITY_PRESETS: Record<QualityPreset, QualityConfig> = {
   },
 }
 
+/** "1080p · 30 fps": o que a tela compartilhada manda em cada nível (resolução máxima e quadros por segundo). */
+export function screenQualitySummary(q: QualityPreset): string {
+  const { resolution, encoding } = QUALITY_PRESETS[q].screen
+  return `${resolution.height}p · ${encoding.maxFramerate ?? resolution.frameRate ?? 30} fps`
+}
+
+/**
+ * Restrições de vídeo da captura de tela, no mesmo formato que o LiveKit usa no getDisplayMedia: tamanho como
+ * "ideal" (a captura nunca aumenta a imagem; uma janela pequena continua pequena) e o fps do nível.
+ * Serve para capturar uma fonte nova (trocar a tela) e para mudar a qualidade da captura que já está rodando.
+ */
+export function screenVideoConstraints(q: QualityPreset): MediaTrackConstraints {
+  const { resolution } = QUALITY_PRESETS[q].screen
+  return { width: { ideal: resolution.width }, height: { ideal: resolution.height }, frameRate: resolution.frameRate }
+}
+
 export function buildRoomOptions(s: MediaSettings): RoomOptions {
   const q = QUALITY_PRESETS[s.quality]
   return {
-    adaptiveStream: true,
+    // Sem pausar o vídeo quando a janela principal fica escondida: a transmissão pode estar na janela separada,
+    // e o Windows marca como escondida a janela que está coberta (ex.: pelo jogo).
+    adaptiveStream: { pauseVideoInBackground: false },
     dynacast: true,
+    // Todo o áudio recebido passa pelo Web Audio: cada faixa ganha um GainNode, o que permite volume por pessoa
+    // acima de 100% (um <audio> para em 1.0). Os elementos <audio> ficam mudos; o som sai pelo AudioContext.
+    webAudioMix: true,
     audioCaptureDefaults: {
       deviceId: s.audioInputId ?? undefined,
       echoCancellation: true,

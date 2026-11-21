@@ -19,6 +19,7 @@ import { CreateGroupModal } from './GroupModals'
 import { GroupSidebar } from './GroupSidebar'
 import { MembersPanel } from './MembersPanel'
 import { ScreenPicker } from '../components/ScreenPicker'
+import { ScreenPopout } from '../components/ScreenPopout'
 import './Shell.css'
 import './Chat.css'
 
@@ -48,7 +49,8 @@ export function Shell({ user, token, notice, onSignOut, onAccountChange }: Props
   const [dmId, setDmId] = useState<string | null>(null)
   const [newMessage, setNewMessage] = useState(false)
   const [creating, setCreating] = useState(false)
-  const [pickingScreen, setPickingScreen] = useState(false)
+  // Seletor de tela aberto: para começar a compartilhar ou para trocar a fonte durante o compartilhamento.
+  const [pickingScreen, setPickingScreen] = useState<'start' | 'swap' | null>(null)
   const addFriendInput = useRef<HTMLInputElement>(null)
   const pending = friends.incoming.length
   const group = groups.find((g) => g.id === openId)
@@ -99,15 +101,18 @@ export function Shell({ user, token, notice, onSignOut, onAccountChange }: Props
   const unreadDms = totalUnread(data.unread)
   // Se a chamada acabar com o seletor aberto, fecha o seletor.
   useEffect(() => {
-    if (!current) setPickingScreen(false)
+    if (!current) setPickingScreen(null)
   }, [current])
   const callScreen = showCall && current ? (
     <CallView crumbs={current.target.kind === 'direct' ? [current.target.friend.displayName] : [callLabel ?? 'Grupo', 'Sala de voz']}
       connecting={current.status === 'connecting'} participants={call.participants} resolve={resolveUser} connectedAt={call.connectedAt}
       prefs={call.prefs} onToggleMic={() => call.setMuted(!(call.prefs.muted || call.prefs.deafened))}
       cameraOn={call.cameraOn} onToggleCamera={() => call.setCamera(!call.cameraOn)}
-      screenSharing={call.screenSharing} onShareScreen={() => setPickingScreen(true)} onStopScreen={() => void call.stopScreenShare()}
-      onToggleDeafen={() => call.setDeafened(!call.prefs.deafened)} onLeave={call.leave} />
+      screenSharing={call.screenSharing} share={call.share} quality={call.mediaSettings.quality} onScreenQuality={call.setScreenQuality}
+      onScreenAudio={call.setScreenAudioOn} onShareScreen={() => setPickingScreen('start')} onSwapScreen={() => setPickingScreen('swap')}
+      onStopScreen={() => void call.stopScreenShare()}
+      onToggleDeafen={() => call.setDeafened(!call.prefs.deafened)} onLeave={call.leave}
+      volumes={call.volumes} onPersonVolume={call.setPersonVolume} popoutId={call.popoutId} onPopout={call.setPopoutId} />
   ) : null
 
   // Se o grupo aberto sumir (saí, fui removido), volta para Amigos.
@@ -219,9 +224,15 @@ export function Shell({ user, token, notice, onSignOut, onAccountChange }: Props
       )}
 
       {pickingScreen && (
-        <ScreenPicker onCancel={() => setPickingScreen(false)}
-          onConfirm={(id, audio) => { setPickingScreen(false); void call.startScreenShare(id, audio) }} />
+        <ScreenPicker mode={pickingScreen} onCancel={() => setPickingScreen(null)}
+          onConfirm={(source, audio) => {
+            setPickingScreen(null)
+            // Se o compartilhamento acabou com o seletor aberto, "trocar" vira começar de novo.
+            void (pickingScreen === 'swap' && call.screenSharing ? call.switchScreenSource(source, audio) : call.startScreenShare(source, audio))
+          }} />
       )}
+      {/* Janela separada da transmissão: aqui, e não na tela da chamada, para continuar aberta no chat. */}
+      <ScreenPopout nameOf={(id) => resolveUser(id)?.displayName ?? 'Alguém'} />
       {newMessage && (
         <NewMessageModal friends={friends.friends} onPick={messageFriend} onClose={() => setNewMessage(false)} />
       )}

@@ -1,12 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useReducer, useRef, useState } from 'react'
-import type { ScreenAudioChoice } from '../../../preload/bridge'
+import type { ScreenAudioChoice, ScreenSource } from '../../../preload/bridge'
 import type { User } from '../lib/api'
 import {
   callReducer, callsApi, initialCallState, isCurrentRoom, NOTICE_MS, startRingTimeout, type CallState,
 } from '../lib/calls'
 import { groupsApi, type VoiceCredentialsDto } from '../lib/groups'
-import { loadMediaSettings, saveMediaSettings, type MediaSettings } from '../lib/mediaSettings'
+import { loadMediaSettings, saveMediaSettings, type MediaSettings, type QualityPreset } from '../lib/mediaSettings'
 import { connectVoice, type MicPrefs, type ParticipantView, type VoiceConnection } from '../lib/voice'
+import { loadVolumes, saveVolumes, updatePerson, type AudioKind, type PersonVolume, type VolumeMap } from '../lib/volumePrefs'
 import type { CallEvents } from './useRealtime'
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e))
@@ -24,11 +25,16 @@ export function useCall(token: string) {
   const [cameraOn, setCameraOn] = useState(false) // não é preferência: começa desligada em toda chamada
   const [mediaSettings, setMediaSettingsState] = useState<MediaSettings>(() => loadMediaSettings(window.localStorage))
   const [connectedAt, setConnectedAt] = useState<number | null>(null)
+  // Volume de cada pessoa, lembrado neste PC (lib/volumePrefs.ts).
+  const [volumes, setVolumesState] = useState<VolumeMap>(() => loadVolumes(window.localStorage))
+  // O que você está compartilhando agora (nome da fonte e modo de som), para a caixinha do botão da tela.
+  const [share, setShare] = useState<ScreenShareInfo | null>(null)
 
   const stateRef = useRef<CallState>(state)
   stateRef.current = state
   const prefsRef = useRef(prefs)
   const mediaSettingsRef = useRef(mediaSettings)
+  const volumesRef = useRef(volumes)
   const connRef = useRef<VoiceConnection | null>(null)
   const attemptRef = useRef(0) // invalida respostas de tentativas antigas
   const stopRingRef = useRef<(() => void) | null>(null)
@@ -65,7 +71,7 @@ export function useCall(token: string) {
           dispatch({ type: 'failed', message: 'A conexão de voz caiu.' })
         },
         onNotice: (message) => attempt === attemptRef.current && dispatch({ type: 'notice', message }),
-      }, mediaSettingsRef.current)
+      }, mediaSettingsRef.current, volumesRef.current)
       if (attempt !== attemptRef.current) {
         conn.disconnect()
         return
@@ -194,15 +200,51 @@ export function useCall(token: string) {
   // Derivado dos participantes: reflete também quando o sistema encerra a captura por conta própria.
   const screenSharing = participants.some((p) => p.isLocal && p.screen != null)
 
-  const startScreenShare = useCallback(async (sourceId: string, audio: ScreenAudioChoice) => {
+  const startScreenShare = useCallback(async (source: ScreenSource, audio: ScreenAudioChoice) => {
     const conn = connRef.current
     if (!conn) return
     try {
-      await window.resenha.screen.choose({ sourceId, audio })
+      await window.resenha.screen.choose({ sourceId: source.id, audio })
       await conn.setScreenShare(true, audio)
+      setShare({ name: source.name, audio })
     } catch {
       dispatch({ type: 'notice', message: 'Não foi possível compartilhar a tela.' })
     }
+  }, [])
+
+  /** "Trocar tela ou janela": a transmissão continua, só a fonte (e o som, se mudou o modo) troca. */
+  const switchScreenSource = useCallback(async (source: ScreenSource, audio: ScreenAudioChoice) => {
+    const conn = connRef.current
+    if (!conn) return
+    try {
+      await conn.switchScreenSource(source.id, audio)
+      setShare({ name: source.name, audio })
+    } catch {
+      dispatch({ type: 'notice', message: 'Não foi possível trocar a tela. A anterior continua.' })
+    }
+  }, [])
+
+  /** Chave "Som da tela" da caixinha. */
+  const setScreenAudioOn = useCallback((on: boolean) => {
+    connRef.current?.setScreenAudioEnabled(on).catch(() => {
+      dispatch({ type: 'notice', message: 'Não foi possível mudar o som da tela.' })
+    })
+  }, [])
+
+  /** Qualidade escolhida na caixinha: vale para a tela que está indo e vira o padrão salvo em "Áudio e vídeo". */
+  const setScreenQuality = useCallback(
+    (quality: QualityPreset) => setMediaSettings({ ...mediaSettingsRef.current, quality }),
+    [setMediaSettings],
+  )
+
+  /** Volume de uma pessoa só para você (voz ou som da transmissão), lembrado neste PC. */
+  const setPersonVolume = useCallback((userId: string, kind: AudioKind, patch: Partial<PersonVolume>) => {
+    const next = updatePerson(volumesRef.current, userId, kind, patch)
+    if (next === volumesRef.current) return
+    volumesRef.current = next
+    setVolumesState(next)
+    saveVolumes(window.localStorage, next)
+    connRef.current?.setVolumes(next)
   }, [])
 
   const stopScreenShare = useCallback(async () => {
@@ -249,6 +291,18 @@ export function useCall(token: string) {
     setConnectedAt(status === 'active' ? (prev) => prev ?? Date.now() : null)
   }, [status])
 
+  // Tela de quem está na janela separada (id da pessoa). Fica aqui, e não na tela da chamada, para a janela
+  // continuar aberta enquanto você vai para o chat; sem chamada, ela fecha.
+  const [popoutId, setPopoutId] = useState<string | null>(null)
+  useEffect(() => {
+    if (!status) setPopoutId(null)
+  }, [status])
+
+  // A tela parou (botão, sistema ou fim da chamada): esquece a fonte.
+  useEffect(() => {
+    if (!screenSharing) setShare(null)
+  }, [screenSharing])
+
   // Avisos curtos somem sozinhos.
   useEffect(() => {
     if (!state.notice) return
@@ -261,7 +315,17 @@ export function useCall(token: string) {
   hangUpRef.current = hangUp
   useEffect(() => () => hangUpRef.current(), [])
 
-  return { state, participants, prefs, viewing, setViewing, connectedAt, events, joinGroup, dial, accept, decline, leave, setMuted, setDeafened, cameraOn, setCamera, mediaSettings, setMediaSettings, screenSharing, startScreenShare, stopScreenShare }
+  return {
+    state, participants, prefs, viewing, setViewing, connectedAt, events, joinGroup, dial, accept, decline, leave, setMuted, setDeafened,
+    cameraOn, setCamera, mediaSettings, setMediaSettings, screenSharing, share, startScreenShare, stopScreenShare, switchScreenSource,
+    setScreenAudioOn, setScreenQuality, volumes, setPersonVolume, popoutId, setPopoutId,
+  }
+}
+
+/** Fonte que você está compartilhando: nome (como aparece no seletor) e o modo de som escolhido. */
+export interface ScreenShareInfo {
+  name: string
+  audio: ScreenAudioChoice
 }
 
 export type CallApi = ReturnType<typeof useCall>

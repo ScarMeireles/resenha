@@ -19,6 +19,9 @@ const bridge: ResenhaBridge = {
     onData: (listener) => subscribe('screen-audio:data', (_event, data: Uint8Array) => listener(data)),
     onEnded: (listener) => subscribe('screen-audio:ended', () => listener()),
   },
+  popout: {
+    setAlwaysOnTop: (on) => ipcRenderer.invoke('popout:always-on-top', on),
+  },
 }
 
 /** Assina um evento do main e devolve a função que cancela; a tela nunca recebe o `event` do Electron. */

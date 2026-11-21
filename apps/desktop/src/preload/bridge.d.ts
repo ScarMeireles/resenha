@@ -36,6 +36,11 @@ export interface ResenhaBridge {
     /** O ajudante parou sozinho (erro ou aparelho de som sumiu). */
     onEnded(listener: () => void): () => void
   }
+  /** Janela separada da transmissão (aberta pela tela com window.open). */
+  popout: {
+    /** Alfinete: deixa a janela separada sempre por cima das outras, ou volta ao normal. */
+    setAlwaysOnTop(on: boolean): Promise<void>
+  }
 }
 
 declare global {
