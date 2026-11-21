@@ -1,5 +1,6 @@
 import { request, type User } from './api'
 import { PAGE_SIZE, type ChatMessage } from './groups'
+import { replaceUser } from './users'
 
 /** Tipos, chamadas e estado das mensagens diretas (DMs). Espelham server/api (DirectConversationDto, DirectMessageDto). */
 
@@ -53,6 +54,8 @@ export type ConversationsAction =
   | { type: 'messageCreated'; message: DirectMessageDto }
   | { type: 'messageDeleted'; conversationId: string; messageId: string }
   | { type: 'friendship'; userId: string; canSend: boolean }
+  /** Alguém mudou nome, foto, banner ou @. */
+  | { type: 'userUpdated'; user: User }
 
 const time = (iso: string) => Date.parse(iso)
 
@@ -93,6 +96,13 @@ export function conversationsReducer(state: DirectConversationDto[], action: Con
       )
     case 'friendship':
       return state.map((c) => (c.user.id === action.userId && c.canSend !== action.canSend ? { ...c, canSend: action.canSend } : c))
+    case 'userUpdated': {
+      // A outra pessoa da conversa e o autor da prévia (que pode ser eu).
+      const { user } = action
+      const withUser = replaceUser(state, user)
+      if (!withUser.some((c) => c.lastMessage?.author.id === user.id)) return withUser
+      return withUser.map((c) => (c.lastMessage?.author.id === user.id ? { ...c, lastMessage: { ...c.lastMessage, author: user } } : c))
+    }
   }
 }
 

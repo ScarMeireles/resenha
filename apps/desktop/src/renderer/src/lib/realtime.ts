@@ -26,6 +26,8 @@ export interface RealtimeHandlers {
   directMessageCreated(message: DirectMessageDto): void
   directMessageDeleted(payload: { conversationId: string; messageId: string }): void
   voiceParticipants(payload: { groupId: string; userIds: string[] }): void
+  /** Alguém que conheço (ou eu, em outra janela) mudou nome, foto, banner ou @. */
+  userUpdated(user: User): void
   callIncoming(payload: { room: string; from: User }): void
   callAccepted(payload: CallActionPayload): void
   callDeclined(payload: CallActionPayload): void
@@ -60,7 +62,7 @@ const EVENTS = [
   'friendRequestReceived', 'friendAdded', 'friendRequestRemoved', 'friendRemoved', 'presenceChanged',
   'groupAdded', 'groupUpdated', 'groupRemoved', 'messageCreated', 'messageDeleted',
   'directMessageCreated', 'directMessageDeleted',
-  'voiceParticipants', 'callIncoming', 'callAccepted', 'callDeclined', 'callCancelled', 'callEnded',
+  'voiceParticipants', 'userUpdated', 'callIncoming', 'callAccepted', 'callDeclined', 'callCancelled', 'callEnded',
 ] as const
 
 /** Liga cada evento do servidor ao handler correspondente. */

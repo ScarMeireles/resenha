@@ -1,5 +1,6 @@
 import { request, type User } from './api'
 import type { Presence } from './presence'
+import { replaceUser } from './users'
 
 /** Tipos, chamadas e estado de grupos e mensagens. Espelham server/api (GroupDto, MessageDto...). */
 
@@ -130,6 +131,7 @@ export type GroupsAction =
   | { type: 'updated'; group: GroupDto }
   | { type: 'removed'; groupId: string }
   | { type: 'presenceChanged'; userId: string; presence: Presence }
+  | { type: 'userUpdated'; user: User }
 
 const upsertGroup = (list: GroupDto[], group: GroupDto) =>
   list.some((g) => g.id === group.id) ? list.map((g) => (g.id === group.id ? group : g)) : [group, ...list]
@@ -149,6 +151,16 @@ export function groupsReducer(state: GroupDto[], action: GroupsAction): GroupDto
           ? { ...g, members: g.members.map((m) => (m.user.id === action.userId ? { ...m, presence: action.presence } : m)) }
           : g,
       )
+    case 'userUpdated': {
+      let changed = false
+      const next = state.map((g) => {
+        const members = replaceUser(g.members, action.user)
+        if (members === g.members) return g
+        changed = true
+        return { ...g, members }
+      })
+      return changed ? next : state
+    }
   }
 }
 
@@ -169,6 +181,7 @@ export type MessagesAction<M extends ChatMessage = MessageDto> =
   | { type: 'created'; chatId: string; message: M }
   | { type: 'deleted'; chatId: string; messageId: string }
   | { type: 'cleared'; chatId: string }
+  | { type: 'userUpdated'; user: User }
 
 /** Junta sem duplicar pelo id (o novo vence) e ordena por data (estável: empate mantém a ordem). */
 function mergeMessages<M extends ChatMessage>(current: M[], incoming: M[]): M[] {
@@ -179,7 +192,7 @@ function mergeMessages<M extends ChatMessage>(current: M[], incoming: M[]): M[] 
 
 /** Serve para o chat do grupo e para a DM: a chave é o id da conversa. */
 export function messagesReducer<M extends ChatMessage>(state: MessagesState<M>, action: MessagesAction<M>): MessagesState<M> {
-  const previous = state[action.chatId] as ChatState<M> | undefined
+  const previous = 'chatId' in action ? (state[action.chatId] as ChatState<M> | undefined) : undefined
   switch (action.type) {
     case 'loaded': {
       const fullPage = action.messages.length === PAGE_SIZE
@@ -212,6 +225,20 @@ export function messagesReducer<M extends ChatMessage>(state: MessagesState<M>, 
       const rest = { ...state }
       delete rest[action.chatId]
       return rest
+    }
+    case 'userUpdated': {
+      // As mensagens já carregadas passam a mostrar o nome/foto novos do autor.
+      let changed = false
+      const next: MessagesState<M> = {}
+      for (const [chatId, chat] of Object.entries(state)) {
+        if (!chat.items.some((m) => m.author.id === action.user.id)) {
+          next[chatId] = chat
+          continue
+        }
+        changed = true
+        next[chatId] = { ...chat, items: chat.items.map((m) => (m.author.id === action.user.id ? { ...m, author: action.user } : m)) }
+      }
+      return changed ? next : state
     }
   }
 }

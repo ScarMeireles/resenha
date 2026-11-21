@@ -5,6 +5,7 @@ import { UserPanel } from '../components/UserPanel'
 import { CallContext, useCall } from '../hooks/useCall'
 import { useRealtime } from '../hooks/useRealtime'
 import { MyStatusContext, useMyStatus } from '../hooks/useMyStatus'
+import { AccountContext } from '../hooks/useAccount'
 import type { User } from '../lib/api'
 import { showsCallScreen } from '../lib/calls'
 import { totalUnread } from '../lib/dms'
@@ -26,16 +27,20 @@ interface Props {
   token: string
   notice?: string
   onSignOut(): void
+  onAccountChange(user: User, newToken?: string): Promise<void>
 }
 
 /**
  * Layout dos mockups: trilho de grupos | barra lateral | conteúdo (| membros, dentro de um grupo).
  * Amigos, grupos e mensagens vêm da API e se atualizam em tempo real por uma conexão só.
  */
-export function Shell({ user, token, notice, onSignOut }: Props) {
+export function Shell({ user, token, notice, onSignOut, onAccountChange }: Props) {
   const [banner, setBanner] = useState(notice)
   const call = useCall(token)
-  const data = useRealtime(token, user.id, call.events)
+  // Meus dados mudaram em outra janela: atualiza aqui também.
+  const data = useRealtime(token, user.id, call.events, (changed) => {
+    if (changed.id === user.id) void onAccountChange(changed)
+  })
   const myStatus = useMyStatus(token)
   const { friends, groups } = data
   const [openId, setOpenId] = useState<string | null>(null)
@@ -113,6 +118,7 @@ export function Shell({ user, token, notice, onSignOut }: Props) {
   return (
     <CallContext.Provider value={{ ...call, label: callLabel }}>
     <MyStatusContext.Provider value={myStatus}>
+    <AccountContext.Provider value={{ token, update: onAccountChange }}>
     <div className={`shell${group ? ' shell--group' : ''}`}>
       <nav className="rail" aria-label="Grupos">
         <div className="rail-item">
@@ -231,6 +237,7 @@ export function Shell({ user, token, notice, onSignOut }: Props) {
         missedCalls={data.missedCalls} onDismissMissed={data.dismissMissedCalls}
         onCallBack={(friend) => { data.dismissMissedCalls(); void call.dial(friend) }} />
     </div>
+    </AccountContext.Provider>
     </MyStatusContext.Provider>
     </CallContext.Provider>
   )

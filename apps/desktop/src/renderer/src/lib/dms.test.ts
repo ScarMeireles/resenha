@@ -82,6 +82,16 @@ describe('conversationsReducer', () => {
     expect(s[0].canSend).toBe(true)
   })
 
+  it('userUpdated troca a outra pessoa e o autor da prévia; sem ninguém afetado devolve o mesmo estado', () => {
+    const s = [conv('a', 'bia', msg('1', 'a', 'bia', '2026-11-20T09:00:00Z')), conv('b', 'leo', msg('2', 'b', 'eu', '2026-11-20T09:00:00Z'))]
+    const bia = { ...user('bia'), displayName: 'Bia Nova' }
+    const after = conversationsReducer(s, { type: 'userUpdated', user: bia })
+    expect(after[0].user.displayName).toBe('Bia Nova')
+    expect(after[0].lastMessage?.author.displayName).toBe('Bia Nova')
+    expect(after[1]).toBe(s[1])
+    expect(conversationsReducer(s, { type: 'userUpdated', user: user('ninguem') })).toBe(s)
+  })
+
   it('recarregar a lista mantém a conversa recém-aberta (vazia)', () => {
     const s = [conv('vazia', 'leo', null), conv('a', 'bia', msg('1', 'a', 'bia', '2026-11-20T09:00:00Z'))]
     const loaded = conversationsReducer(s, { type: 'loaded', conversations: [conv('b', 'duda', msg('3', 'b', 'duda', '2026-11-20T10:00:00Z'))] })
