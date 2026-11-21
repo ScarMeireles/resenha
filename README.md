@@ -97,7 +97,7 @@ resenha/
 - [x] **Passo 7 — Câmera** e grade de vídeos.
 - [x] **Passo 8 — Compartilhar tela** com seletor de janela/monitor e áudio do sistema.
 - [x] **Passo 9 — Qualidade:** presets de bitrate, simulcast, supressão de ruído, seleção de microfone/fone.
-- [ ] **Passo 10 — Hospedagem real** na Oracle e teste com um amigo pela internet.
+- [ ] **Passo 10 — Hospedagem real** na Oracle e teste com um amigo pela internet. Arquivos prontos em `deploy/`; guia em [docs/HOSPEDAGEM.md](docs/HOSPEDAGEM.md).
 - [ ] **Passo 11 — Instalador** `.exe` com electron-builder, publicado em Releases do GitHub (build local, sem CI). O instalador já sai com `npm run dist`; falta publicar em Releases, o que depende do passo 10 (endereços reais do servidor) e de um push autorizado.
 
 ## Pré-requisitos (já instalados nesta máquina)

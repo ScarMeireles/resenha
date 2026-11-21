@@ -1,0 +1,58 @@
+# Servidor real do Resenha (passo 10): Caddy (HTTPS) + API + LiveKit numa VM só.
+# Sobe com: docker compose up -d --build   (dentro desta pasta, na VM; o deploy/publish.ps1 faz isso por você)
+# Os segredos e o domínio vêm do deploy/.env, que só existe na VM (gerado pelo setup-vm.sh) e nunca vai para o Git.
+name: resenha
+
+services:
+  caddy:
+    image: caddy:2.10
+    restart: unless-stopped
+    environment:
+      RESENHA_DOMAIN: "${RESENHA_DOMAIN:?defina RESENHA_DOMAIN no deploy/.env}"
+    ports:
+      - "80:80"     # só para o Let's Encrypt validar o domínio e redirecionar para HTTPS
+      - "443:443"   # API, SignalR e sinalização do LiveKit, tudo em HTTPS/WSS
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data       # certificados (não precisa pedir de novo a cada atualização)
+      - caddy_config:/config
+    depends_on: [api, livekit]
+    logging: &logs            # logs com rotação e tamanho máximo (3 x 10 MB)
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    build: ../server/api
+    restart: unless-stopped
+    # Sem "ports": a API só é alcançada pelo Caddy, pela rede interna do Docker.
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ReverseProxy__Enabled: "true"
+      LiveKit__Url: "wss://${RESENHA_DOMAIN}"
+      LIVEKIT_API_KEY: "${LIVEKIT_API_KEY:?defina LIVEKIT_API_KEY no deploy/.env}"
+      LIVEKIT_API_SECRET: "${LIVEKIT_API_SECRET:?defina LIVEKIT_API_SECRET no deploy/.env}"
+      Jwt__SigningKey: "${JWT_SIGNING_KEY:?defina JWT_SIGNING_KEY no deploy/.env}"
+    volumes:
+      - api_data:/data        # banco SQLite e imagens
+    logging: *logs
+
+  livekit:
+    image: livekit/livekit-server:v1.13.11
+    restart: unless-stopped
+    command: ["--config", "/etc/livekit.yaml"]
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+      LIVEKIT_WEBHOOK_API_KEY: "${LIVEKIT_API_KEY}"
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "7881:7881"       # mídia por TCP (plano B quando a rede bloqueia UDP)
+      - "7882:7882/udp"   # mídia por UDP (o caminho normal)
+    logging: *logs
+
+volumes:
+  caddy_data:
+  caddy_config:
+  api_data:

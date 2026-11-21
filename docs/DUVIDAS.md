@@ -10,14 +10,6 @@ Status possíveis: `aberta` (ainda não bloqueia), `bloqueante` (trava um passo)
 
 ## Abertas
 
-### D6 — Hospedagem na Oracle e publicação do instalador
-- Status: bloqueante
-- Passo: 10 e o fim do 11
-- Contexto: os passos que sobraram precisam de coisas que a automação não pode fazer: criar a conta e a VM na Oracle Cloud (Always Free), configurar domínio/HTTPS e chaves do LiveKit, fazer `git push` e subir o `.exe` em Releases do GitHub.
-- Opções: A) você cria a conta e a VM na Oracle numa sessão interativa, com a automação guiando passo a passo e preparando os arquivos de deploy (recomendado) · B) a automação prepara agora só os arquivos de deploy (Docker Compose, Caddy, script de instalação) sem tocar em conta nenhuma, e você sobe depois.
-- Enquanto isso: nada mais do roteiro está livre; o instalador já sai com `npm run dist`.
-- Resposta:
-
 <!-- Modelo:
 ### D1 — Título curto
 - Status: aberta | bloqueante
@@ -29,6 +21,9 @@ Status possíveis: `aberta` (ainda não bloqueia), `bloqueante` (trava um passo)
 -->
 
 ## Resolvidas
+
+### R11 — Hospedagem na Oracle e publicação do instalador (era D6, passos 10 e 11)
+- Respondido no chat em 20/11/2026: opção A. A automação prepara os arquivos de deploy (`deploy/`) e guia o usuário, numa sessão interativa, a criar a conta e a VM Always Free. Guia em `docs/HOSPEDAGEM.md`.
 
 ### R6 — Pedidos enviados e desfazer amizade (era D1, passo 4)
 - Respondido no chat em 20/11/2026: opção A aprovada, como já está (seção "PEDIDOS ENVIADOS — N" com "Cancelar pedido"; desfazer amizade depois, num menu "⋯").

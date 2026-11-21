@@ -1,0 +1,19 @@
+# LiveKit do servidor real. Sem segredos aqui: as chaves vêm de LIVEKIT_KEYS (deploy/.env, via docker-compose).
+port: 7880            # sinalização; só o Caddy fala com esta porta (ela não é publicada)
+
+rtc:
+  tcp_port: 7881      # plano B: mídia por TCP quando a rede bloqueia UDP
+  udp_port: 7882      # toda a mídia UDP numa porta só (fácil de liberar no firewall da Oracle)
+  use_external_ip: true   # descobre sozinho o IP público da VM (por STUN); assim o IP não fica escrito em lugar nenhum
+
+room:
+  empty_timeout: 300
+  departure_timeout: 20
+
+logging:
+  level: info
+
+# Avisos de entrada/saída das salas para a API, pela rede interna do Docker.
+webhook:
+  urls:
+    - http://api:8080/livekit/webhook
