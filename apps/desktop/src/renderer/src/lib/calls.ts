@@ -27,6 +27,15 @@ export interface CurrentCall {
   room?: string
 }
 
+/**
+ * A tela da chamada aparece no lugar do chat/Amigos quando a pessoa escolheu vê-la (`viewing`) e já há o que mostrar:
+ * chamada ativa ou, em grupo, ainda conectando. Esconder a tela não desconecta: a sala do LiveKit vive no `useCall`.
+ */
+export function showsCallScreen(viewing: boolean, current: CurrentCall | null): boolean {
+  if (!viewing || !current) return false
+  return current.status === 'active' || (current.target.kind === 'group' && current.status === 'connecting')
+}
+
 export interface IncomingCall {
   room: string
   from: User

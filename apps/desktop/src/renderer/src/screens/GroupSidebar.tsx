@@ -19,6 +19,11 @@ interface Props {
   voiceUserIds: string[]
   /** Dados ao vivo (falando/mutado) — só existem se eu estou nesta sala. */
   liveParticipants: ParticipantView[]
+  /** Canal em exibição no conteúdo: o chat, a sala de voz deste grupo ou nenhum (ex.: tela de uma chamada 1:1). */
+  channel: 'chat' | 'voice' | null
+  /** Mostra o chat do grupo; se houver chamada, ela continua rodando por trás. */
+  onOpenChat(): void
+  /** Entra na sala de voz ou, se já estou nela, volta para a tela da chamada. */
   onJoinVoice(): void
   onRename(name: string): Promise<void>
   onAddMembers(userIds: string[]): Promise<void>
@@ -27,7 +32,7 @@ interface Props {
 }
 
 /** Barra lateral de um grupo: nome com menu de configurações, canais e botão de adicionar pessoas. */
-export function GroupSidebar({ group, user, friends, voiceUserIds, liveParticipants, onJoinVoice, onRename, onAddMembers, onLeave, onSignOut }: Props) {
+export function GroupSidebar({ group, user, friends, voiceUserIds, liveParticipants, channel, onOpenChat, onJoinVoice, onRename, onAddMembers, onLeave, onSignOut }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dialog, setDialog] = useState<Dialog>(null)
   const headerRef = useRef<HTMLElement>(null)
@@ -77,8 +82,12 @@ export function GroupSidebar({ group, user, friends, voiceUserIds, liveParticipa
       </header>
 
       <div className="sidebar-body">
-        <button className="channel channel--active" aria-current="page"><HashIcon size={18} /> conversa</button>
-        <button className="channel" onClick={onJoinVoice}>
+        <button className={`channel${channel === 'chat' ? ' channel--active' : ''}`} aria-current={channel === 'chat' ? 'page' : undefined}
+          onClick={onOpenChat}>
+          <HashIcon size={18} /> conversa
+        </button>
+        <button className={`channel${channel === 'voice' ? ' channel--active' : ''}`} aria-current={channel === 'voice' ? 'page' : undefined}
+          onClick={onJoinVoice}>
           <SpeakerIcon size={18} /> Sala de voz
           {voiceUserIds.length > 0 && <span className="voice-count">{voiceUserIds.length} na sala</span>}
         </button>

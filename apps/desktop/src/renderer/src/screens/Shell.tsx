@@ -6,6 +6,7 @@ import { CallContext, useCall } from '../hooks/useCall'
 import { useRealtime } from '../hooks/useRealtime'
 import { MyStatusContext, useMyStatus } from '../hooks/useMyStatus'
 import type { User } from '../lib/api'
+import { showsCallScreen } from '../lib/calls'
 import { initials } from '../lib/groups'
 import { CallView } from './CallView'
 import { ChatView } from './ChatView'
@@ -61,7 +62,7 @@ export function Shell({ user, token, notice, onSignOut }: Props) {
     id === user.id ? user : friends.friends.find((f) => f.user.id === id)?.user ?? groups.flatMap((g) => g.members).find((m) => m.user.id === id)?.user
 
   const callLabel = current ? (current.target.kind === 'direct' ? current.target.friend.displayName : callGroup?.name ?? null) : null
-  const showCall = call.viewing && !!current && (current.status === 'active' || (current.target.kind === 'group' && current.status === 'connecting'))
+  const showCall = showsCallScreen(call.viewing, current)
   // Se a chamada acabar com o seletor aberto, fecha o seletor.
   useEffect(() => {
     if (!current) setPickingScreen(false)
@@ -112,6 +113,8 @@ export function Shell({ user, token, notice, onSignOut }: Props) {
           <GroupSidebar group={group} user={user} friends={friends.friends} onSignOut={onSignOut}
             voiceUserIds={data.voice[group.id] ?? []}
             liveParticipants={callGroup?.id === group.id ? call.participants : []}
+            channel={showCall ? (callGroup?.id === group.id ? 'voice' : null) : 'chat'}
+            onOpenChat={() => call.setViewing(false)}
             onJoinVoice={() => void call.joinGroup(group.id)}
             onRename={(name) => data.renameGroup(group.id, name)}
             onAddMembers={(ids) => data.addMembers(group.id, ids)}
