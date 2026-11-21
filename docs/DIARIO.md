@@ -4,6 +4,9 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (bug: removido do grupo ainda recebia mensagens, branch `feature/corrige-remocao-grupo`)
+- Bug do servidor, não só do teste: o SignalR libera o cliente antes do `OnConnectedAsync`; se a remoção caía no meio (conexão já leu "é membro" no banco, mas ainda não estava registrada), ela entrava no grupo depois e o ex-membro seguia recebendo as mensagens. Agora entrada nos grupos + registro da conexão e adição/remoção de membro passam pela mesma trava do `GroupNotifier`, e `groupRemoved` só sai depois de todas as conexões deixarem o grupo (vale para sair, ser removido e grupo apagado). DMs não usam grupo do SignalR (vão para os dois participantes fixos), então não há ex-participante. Testes de tempo real esperam a conexão ficar pronta em vez de `Task.Delay`; loop 20/20 nos `RealtimeTests` e na suíte completa.
+
 ## 20/11/2026 — sessão interativa (tela de mensagens diretas, branch `feature/tela-dms`)
 - App: seção "Mensagens diretas" no Início ("+" abre a lista de amigos, prévia, não lidas locais em `localStorage`, mais recente em cima), botão "Mensagem" na lista de amigos, tela da conversa reaproveitando o `ChatView` (o reducer de mensagens virou genérico por `chatId`), ligar pelo cabeçalho, intro e aviso de só leitura para ex-amigos. Tempo real com `directMessageCreated`/`directMessageDeleted` e `canSend` por `friendAdded`/`friendRemoved`; badge de não lidas também no botão do Início quando se está num grupo. Lógica em `lib/dms.ts` com testes. Conferido no Electron com a API local (receber, abrir, enviar, só leitura, voltar a ser amigos, apagar, "+"). Depois juntei `hml` (cartão de perfil) e as DMs também tratam `userUpdated`. Sem merge em `hml`.
 
