@@ -44,51 +44,51 @@ describe('messagesReducer', () => {
     Array.from({ length: n }, (_, i) => message(`m${from + i}`, new Date(2026, 4, 10, 12, 0, from + i).toISOString()))
 
   it('loaded guarda a página e hasMore só se ela veio cheia', () => {
-    expect(messagesReducer({}, { type: 'loaded', groupId: 'g1', messages: page(3) }).g1.hasMore).toBe(false)
-    expect(messagesReducer({}, { type: 'loaded', groupId: 'g1', messages: page(PAGE_SIZE) }).g1.hasMore).toBe(true)
+    expect(messagesReducer({}, { type: 'loaded', chatId: 'g1', messages: page(3) }).g1.hasMore).toBe(false)
+    expect(messagesReducer({}, { type: 'loaded', chatId: 'g1', messages: page(PAGE_SIZE) }).g1.hasMore).toBe(true)
   })
 
   it('loaded de novo (reconexão) junta com o que já existe sem duplicar', () => {
-    let s = messagesReducer({}, { type: 'loaded', groupId: 'g1', messages: page(3) })
-    s = messagesReducer(s, { type: 'loaded', groupId: 'g1', messages: page(5) })
+    let s = messagesReducer({}, { type: 'loaded', chatId: 'g1', messages: page(3) })
+    s = messagesReducer(s, { type: 'loaded', chatId: 'g1', messages: page(5) })
     expect(ids(s)).toEqual(['m0', 'm1', 'm2', 'm3', 'm4'])
   })
 
   it('loaded cheia que não encosta no histórico (buraco) fica só com a página nova', () => {
-    let s = messagesReducer({}, { type: 'loaded', groupId: 'g1', messages: page(3) })
-    s = messagesReducer(s, { type: 'loaded', groupId: 'g1', messages: page(PAGE_SIZE, 100) })
+    let s = messagesReducer({}, { type: 'loaded', chatId: 'g1', messages: page(3) })
+    s = messagesReducer(s, { type: 'loaded', chatId: 'g1', messages: page(PAGE_SIZE, 100) })
     expect(s.g1.items).toHaveLength(PAGE_SIZE)
     expect(s.g1.hasMore).toBe(true)
   })
 
   it('olderLoaded entra antes, sem duplicar, e atualiza hasMore', () => {
-    let s = messagesReducer({}, { type: 'loaded', groupId: 'g1', messages: page(PAGE_SIZE, 10) })
-    s = messagesReducer(s, { type: 'olderLoaded', groupId: 'g1', messages: [...page(3, 7)] })
+    let s = messagesReducer({}, { type: 'loaded', chatId: 'g1', messages: page(PAGE_SIZE, 10) })
+    s = messagesReducer(s, { type: 'olderLoaded', chatId: 'g1', messages: [...page(3, 7)] })
     expect(ids(s).slice(0, 4)).toEqual(['m7', 'm8', 'm9', 'm10'])
     expect(s.g1.hasMore).toBe(false)
   })
 
   it('created não duplica pelo id e mantém a ordem por data', () => {
-    let s = messagesReducer({}, { type: 'loaded', groupId: 'g1', messages: [message('a', '2026-05-10T10:00:00Z'), message('c', '2026-05-10T12:00:00Z')] })
-    s = messagesReducer(s, { type: 'created', message: message('b', '2026-05-10T11:00:00Z') })
-    s = messagesReducer(s, { type: 'created', message: message('b', '2026-05-10T11:00:00Z') })
+    let s = messagesReducer({}, { type: 'loaded', chatId: 'g1', messages: [message('a', '2026-05-10T10:00:00Z'), message('c', '2026-05-10T12:00:00Z')] })
+    s = messagesReducer(s, { type: 'created', chatId: 'g1', message: message('b', '2026-05-10T11:00:00Z') })
+    s = messagesReducer(s, { type: 'created', chatId: 'g1', message: message('b', '2026-05-10T11:00:00Z') })
     expect(ids(s)).toEqual(['a', 'b', 'c'])
   })
 
   it('created de um grupo não carregado é ignorado', () => {
-    expect(messagesReducer({}, { type: 'created', message: message('a') })).toEqual({})
+    expect(messagesReducer({}, { type: 'created', chatId: 'g1', message: message('a') })).toEqual({})
   })
 
   it('deleted marca como apagada e limpa texto e imagens', () => {
-    let s = messagesReducer({}, { type: 'loaded', groupId: 'g1', messages: [message('a'), message('b')] })
-    s = messagesReducer(s, { type: 'deleted', groupId: 'g1', messageId: 'a' })
+    let s = messagesReducer({}, { type: 'loaded', chatId: 'g1', messages: [message('a'), message('b')] })
+    s = messagesReducer(s, { type: 'deleted', chatId: 'g1', messageId: 'a' })
     expect(s.g1.items[0]).toMatchObject({ deleted: true, text: '', images: [] })
     expect(s.g1.items[1].deleted).toBe(false)
   })
 
   it('cleared esquece a conversa do grupo', () => {
-    const s = messagesReducer({}, { type: 'loaded', groupId: 'g1', messages: [message('a')] })
-    expect(messagesReducer(s, { type: 'cleared', groupId: 'g1' })).toEqual({})
+    const s = messagesReducer({}, { type: 'loaded', chatId: 'g1', messages: [message('a')] })
+    expect(messagesReducer(s, { type: 'cleared', chatId: 'g1' })).toEqual({})
   })
 })
 

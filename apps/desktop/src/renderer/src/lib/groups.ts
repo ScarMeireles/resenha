@@ -34,14 +34,18 @@ export interface MessageImageDto {
   height: number
 }
 
-export interface MessageDto {
+/** O que toda mensagem de chat tem (grupo ou conversa direta). Apagada vem com `deleted`, texto vazio e sem imagens. */
+export interface ChatMessage {
   id: string
-  groupId: string
   author: User
   text: string
   images: MessageImageDto[]
   createdAt: string
   deleted: boolean
+}
+
+export interface MessageDto extends ChatMessage {
+  groupId: string
 }
 
 /** Resposta dos endpoints que liberam entrada numa sala de voz. */
@@ -148,69 +152,65 @@ export function groupsReducer(state: GroupDto[], action: GroupsAction): GroupDto
   }
 }
 
-// --- Estado das mensagens (por grupo) ---
+// --- Estado das mensagens (por conversa: grupo ou DM) ---
 
-export interface ChatState {
+export interface ChatState<M extends ChatMessage = MessageDto> {
   /** Do mais antigo para o mais novo. */
-  items: MessageDto[]
+  items: M[]
   hasMore: boolean
 }
 
-export type MessagesState = Record<string, ChatState>
+/** Mensagens carregadas por conversa (id do grupo ou da DM → estado). */
+export type MessagesState<M extends ChatMessage = MessageDto> = Record<string, ChatState<M>>
 
-export type MessagesAction =
-  | { type: 'loaded'; groupId: string; messages: MessageDto[] }
-  | { type: 'olderLoaded'; groupId: string; messages: MessageDto[] }
-  | { type: 'created'; message: MessageDto }
-  | { type: 'deleted'; groupId: string; messageId: string }
-  | { type: 'cleared'; groupId: string }
+export type MessagesAction<M extends ChatMessage = MessageDto> =
+  | { type: 'loaded'; chatId: string; messages: M[] }
+  | { type: 'olderLoaded'; chatId: string; messages: M[] }
+  | { type: 'created'; chatId: string; message: M }
+  | { type: 'deleted'; chatId: string; messageId: string }
+  | { type: 'cleared'; chatId: string }
 
 /** Junta sem duplicar pelo id (o novo vence) e ordena por data (estável: empate mantém a ordem). */
-function mergeMessages(current: MessageDto[], incoming: MessageDto[]): MessageDto[] {
+function mergeMessages<M extends ChatMessage>(current: M[], incoming: M[]): M[] {
   const byId = new Map(current.map((m) => [m.id, m]))
   for (const m of incoming) byId.set(m.id, m)
   return [...byId.values()].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
 }
 
-export function messagesReducer(state: MessagesState, action: MessagesAction): MessagesState {
+/** Serve para o chat do grupo e para a DM: a chave é o id da conversa. */
+export function messagesReducer<M extends ChatMessage>(state: MessagesState<M>, action: MessagesAction<M>): MessagesState<M> {
+  const previous = state[action.chatId] as ChatState<M> | undefined
   switch (action.type) {
     case 'loaded': {
-      const previous = state[action.groupId]
       const fullPage = action.messages.length === PAGE_SIZE
-      if (!previous) return { ...state, [action.groupId]: { items: mergeMessages([], action.messages), hasMore: fullPage } }
+      if (!previous) return { ...state, [action.chatId]: { items: mergeMessages([], action.messages), hasMore: fullPage } }
       // Recarga (reconexão): se a página cheia não encosta no que já temos, houve buraco; fica só com ela.
       const overlaps = action.messages.some((m) => previous.items.some((p) => p.id === m.id))
       if (fullPage && !overlaps && previous.items.length > 0)
-        return { ...state, [action.groupId]: { items: mergeMessages([], action.messages), hasMore: true } }
-      return { ...state, [action.groupId]: { items: mergeMessages(previous.items, action.messages), hasMore: previous.hasMore } }
+        return { ...state, [action.chatId]: { items: mergeMessages([], action.messages), hasMore: true } }
+      return { ...state, [action.chatId]: { items: mergeMessages(previous.items, action.messages), hasMore: previous.hasMore } }
     }
-    case 'olderLoaded': {
-      const previous = state[action.groupId]
+    case 'olderLoaded':
       if (!previous) return state
       return {
         ...state,
-        [action.groupId]: { items: mergeMessages(previous.items, action.messages), hasMore: action.messages.length === PAGE_SIZE },
+        [action.chatId]: { items: mergeMessages(previous.items, action.messages), hasMore: action.messages.length === PAGE_SIZE },
       }
-    }
-    case 'created': {
-      const previous = state[action.message.groupId]
-      if (!previous) return state // grupo ainda não aberto: a página carregada depois já traz a mensagem
-      return { ...state, [action.message.groupId]: { ...previous, items: mergeMessages(previous.items, [action.message]) } }
-    }
-    case 'deleted': {
-      const previous = state[action.groupId]
+    case 'created':
+      if (!previous) return state // conversa ainda não aberta: a página carregada depois já traz a mensagem
+      return { ...state, [action.chatId]: { ...previous, items: mergeMessages(previous.items, [action.message]) } }
+    case 'deleted':
       if (!previous) return state
       return {
         ...state,
-        [action.groupId]: {
+        [action.chatId]: {
           ...previous,
           items: previous.items.map((m) => (m.id === action.messageId ? { ...m, deleted: true, text: '', images: [] } : m)),
         },
       }
-    }
     case 'cleared': {
       const rest = { ...state }
-      delete rest[action.groupId]
+      delete rest[action.chatId]
       return rest
     }
   }
@@ -237,15 +237,15 @@ export function dayLabel(iso: string, now: Date = new Date()): string {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
 }
 
-export interface DayGroup {
+export interface DayGroup<M extends ChatMessage = MessageDto> {
   key: string
   label: string
-  messages: MessageDto[]
+  messages: M[]
 }
 
 /** Agrupa mensagens (já em ordem) por dia local, para pôr o separador de dia. */
-export function groupByDay(messages: MessageDto[], now: Date = new Date()): DayGroup[] {
-  const days: DayGroup[] = []
+export function groupByDay<M extends ChatMessage>(messages: M[], now: Date = new Date()): DayGroup<M>[] {
+  const days: DayGroup<M>[] = []
   for (const message of messages) {
     const key = dayKey(new Date(message.createdAt))
     const last = days[days.length - 1]

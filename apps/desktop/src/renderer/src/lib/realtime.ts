@@ -3,6 +3,7 @@ import { apiUrl, type User } from './api'
 import type { FriendDto, FriendRequestDto } from './friends'
 import type { Presence } from './presence'
 import type { GroupDto, MessageDto } from './groups'
+import type { DirectMessageDto } from './dms'
 
 /** Quem agiu numa chamada: `userId` é a pessoa que aceitou, recusou, cancelou ou desligou. */
 export interface CallActionPayload {
@@ -22,6 +23,8 @@ export interface RealtimeHandlers {
   groupRemoved(payload: { groupId: string }): void
   messageCreated(message: MessageDto): void
   messageDeleted(payload: { groupId: string; messageId: string }): void
+  directMessageCreated(message: DirectMessageDto): void
+  directMessageDeleted(payload: { conversationId: string; messageId: string }): void
   voiceParticipants(payload: { groupId: string; userIds: string[] }): void
   callIncoming(payload: { room: string; from: User }): void
   callAccepted(payload: CallActionPayload): void
@@ -56,6 +59,7 @@ export interface HubLike {
 const EVENTS = [
   'friendRequestReceived', 'friendAdded', 'friendRequestRemoved', 'friendRemoved', 'presenceChanged',
   'groupAdded', 'groupUpdated', 'groupRemoved', 'messageCreated', 'messageDeleted',
+  'directMessageCreated', 'directMessageDeleted',
   'voiceParticipants', 'callIncoming', 'callAccepted', 'callDeclined', 'callCancelled', 'callEnded',
 ] as const
 

@@ -1,21 +1,26 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { Avatar } from '../components/Avatar'
 import { HashIcon, PhoneIcon, PlusIcon, SendIcon, TrashIcon, XIcon } from '../components/Icons'
 import { ConfirmModal } from '../components/Modal'
 import { mediaUrl, type User } from '../lib/api'
 import {
   formatTime, groupByDay, MAX_MESSAGE_LENGTH, validateAttachments,
-  type ChatState, type GroupDto, type MessageDto, type MessageImageDto,
+  type ChatMessage, type ChatState, type GroupDto, type MessageImageDto,
 } from '../lib/groups'
 import './Chat.css'
 
-interface Props {
-  group: GroupDto
-  /** Já estou na chamada deste grupo? (muda o texto do botão do cabeçalho) */
-  inCall: boolean
-  onJoinCall(): void
+interface Props<M extends ChatMessage> {
+  /** Conteúdo do cabeçalho (ícone/foto, título e ações). */
+  header: ReactNode
+  /** Aparece no topo quando não há mensagens mais antigas para carregar (início da conversa). */
+  intro?: ReactNode
+  /** Texto da conversa vazia (sem `intro`). */
+  emptyText?: string
+  placeholder: string
+  /** Aviso que troca o campo de envio quando não dá para mandar mensagem (conversa só leitura). */
+  readOnly?: string | null
   user: User
-  chat: ChatState | undefined
+  chat: ChatState<M> | undefined
   onLoad(): Promise<void>
   onLoadOlder(before: string): Promise<void>
   onSend(text: string, images: File[]): Promise<void>
@@ -27,15 +32,39 @@ const TOP_TRIGGER_PX = 80
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
-/** Cabeçalho, lista de mensagens e campo de envio do grupo. Use `key={group.id}` para zerar ao trocar de grupo. */
-export function ChatView({ group, user, chat, inCall, onJoinCall, onLoad, onLoadOlder, onSend, onDelete }: Props) {
+/** Chat do grupo: cabeçalho com o canal e o botão de entrar na chamada. Use `key={group.id}` para zerar ao trocar de grupo. */
+export function GroupChatView({ group, inCall, onJoinCall, ...rest }: Omit<Props<ChatMessage>, 'header' | 'placeholder' | 'emptyText'> & {
+  group: GroupDto
+  /** Já estou na chamada deste grupo? (muda o texto do botão do cabeçalho) */
+  inCall: boolean
+  onJoinCall(): void
+}) {
+  const memberCount = group.members.length
+  return (
+    <ChatView {...rest} placeholder="Mensagem em conversa" emptyText="Nenhuma mensagem ainda. Diga oi!" header={
+      <>
+        <HashIcon size={20} />
+        <h2>conversa</h2>
+        <span className="chat-count">· {memberCount} {memberCount === 1 ? 'membro' : 'membros'}</span>
+        <button className="pill-button" onClick={onJoinCall}>
+          <PhoneIcon size={16} /> {inCall ? 'Voltar à chamada' : 'Entrar na chamada'}
+        </button>
+      </>
+    } />
+  )
+}
+
+/** Lista de mensagens (por dia, com imagens, apagar e paginação) e campo de envio. Serve para grupo e DM. */
+export function ChatView<M extends ChatMessage>({
+  header, intro, emptyText, placeholder, readOnly, user, chat, onLoad, onLoadOlder, onSend, onDelete,
+}: Props<M>) {
   const listRef = useRef<HTMLDivElement>(null)
   const nearBottom = useRef(true)
   const loadingOlder = useRef(false)
   const olderAnchor = useRef<number | null>(null) // altura da lista antes de carregar mais antigas
   const lastSeen = useRef<{ first?: string; last?: string }>({})
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [deleting, setDeleting] = useState<MessageDto | null>(null)
+  const [deleting, setDeleting] = useState<M | null>(null)
   const [viewing, setViewing] = useState<MessageImageDto | null>(null)
 
   const items = chat?.items ?? []
@@ -86,22 +115,15 @@ export function ChatView({ group, user, chat, inCall, onJoinCall, onLoad, onLoad
   }
 
   const days = groupByDay(items)
-  const memberCount = group.members.length
 
   return (
     <main className="content chat">
-      <header className="pane-header content-header">
-        <HashIcon size={20} />
-        <h2>conversa</h2>
-        <span className="chat-count">· {memberCount} {memberCount === 1 ? 'membro' : 'membros'}</span>
-        <button className="pill-button" onClick={onJoinCall}>
-          <PhoneIcon size={16} /> {inCall ? 'Voltar à chamada' : 'Entrar na chamada'}
-        </button>
-      </header>
+      <header className="pane-header content-header">{header}</header>
 
       <div className="chat-list" ref={listRef} onScroll={onScroll}>
         {loadError && <p className="chat-error" role="alert">{loadError}</p>}
-        {chat && items.length === 0 && <p className="chat-empty">Nenhuma mensagem ainda. Diga oi!</p>}
+        {chat && !hasMore && intro}
+        {chat && items.length === 0 && !intro && emptyText && <p className="chat-empty">{emptyText}</p>}
         {days.map((day) => (
           <section key={day.key}>
             <div className="day-separator"><span>{day.label}</span></div>
@@ -112,7 +134,11 @@ export function ChatView({ group, user, chat, inCall, onJoinCall, onLoad, onLoad
         ))}
       </div>
 
-      <Composer groupName="conversa" onSend={onSend} />
+      {readOnly ? (
+        <div className="composer"><p className="composer-locked" role="status">{readOnly}</p></div>
+      ) : (
+        <Composer placeholder={placeholder} onSend={onSend} />
+      )}
 
       {deleting && (
         <ConfirmModal title="Apagar mensagem?" confirmLabel="Apagar" onConfirm={() => onDelete(deleting.id)} onClose={() => setDeleting(null)} />
@@ -123,7 +149,7 @@ export function ChatView({ group, user, chat, inCall, onJoinCall, onLoad, onLoad
 }
 
 function Message({ message, mine, onDelete, onOpenImage }: {
-  message: MessageDto
+  message: ChatMessage
   mine: boolean
   onDelete(): void
   onOpenImage(image: MessageImageDto): void
@@ -181,7 +207,7 @@ interface Attachment {
   url: string
 }
 
-function Composer({ groupName, onSend }: { groupName: string; onSend(text: string, images: File[]): Promise<void> }) {
+function Composer({ placeholder, onSend }: { placeholder: string; onSend(text: string, images: File[]): Promise<void> }) {
   const [text, setText] = useState('')
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -270,7 +296,7 @@ function Composer({ groupName, onSend }: { groupName: string; onSend(text: strin
         </button>
         <label className="sr-only" htmlFor="composer-text">Mensagem</label>
         <textarea id="composer-text" ref={textarea} rows={1} value={text} maxLength={MAX_MESSAGE_LENGTH}
-          placeholder={`Mensagem em ${groupName}`} onChange={(e) => setText(e.target.value)} onKeyDown={onKeyDown} onPaste={onPaste} />
+          placeholder={placeholder} onChange={(e) => setText(e.target.value)} onKeyDown={onKeyDown} onPaste={onPaste} />
         <button type="submit" className="composer-send" aria-label="Enviar" disabled={sending}><SendIcon size={18} /></button>
       </div>
     </form>

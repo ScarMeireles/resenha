@@ -4,6 +4,9 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (tela de mensagens diretas, branch `feature/tela-dms`)
+- App: seção "Mensagens diretas" no Início ("+" abre a lista de amigos, prévia, não lidas locais em `localStorage`, mais recente em cima), botão "Mensagem" na lista de amigos, tela da conversa reaproveitando o `ChatView` (o reducer de mensagens virou genérico por `chatId`), ligar pelo cabeçalho, intro e aviso de só leitura para ex-amigos. Tempo real com `directMessageCreated`/`directMessageDeleted` e `canSend` por `friendAdded`/`friendRemoved`; badge de não lidas também no botão do Início quando se está num grupo. Lógica em `lib/dms.ts` com testes. Conferido no Electron com a API local (receber, abrir, enviar, só leitura, voltar a ser amigos, apagar, "+"). Sem merge.
+
 ## 20/11/2026 — sessão interativa (API de DM e troca do @, branch `feature/api-dm-e-arroba`)
 - Só servidor (a tela espera os modelos). `PUT /me/username` (token novo; o antigo segue valendo) e mensagens diretas em `/dms`, na mesma tabela `Messages` do grupo (coluna `ConversationId` + tabela `DirectConversations`, migração `ConversasDiretas`). O código comum de enviar/paginar/apagar saiu de `GroupEndpoints` para `Chat/ChatMessages.cs`. Testes: 174 ok (24 novos). Sem merge.
 

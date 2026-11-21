@@ -15,9 +15,11 @@ interface Props {
   onAccept(id: string): Promise<void>
   onRemoveRequest(id: string): Promise<void>
   onCall(user: User): void
+  /** Abre (ou cria) a conversa direta com o amigo. */
+  onMessage(user: User): Promise<void>
 }
 
-export function FriendsView({ state, inputRef, onSendRequest, onAccept, onRemoveRequest, onCall }: Props) {
+export function FriendsView({ state, inputRef, onSendRequest, onAccept, onRemoveRequest, onCall, onMessage }: Props) {
   const [tab, setTab] = useState<Tab>('all')
   const tabs: { id: Tab; label: string }[] = [
     { id: 'online', label: 'Online' },
@@ -42,7 +44,7 @@ export function FriendsView({ state, inputRef, onSendRequest, onAccept, onRemove
         {tab === 'requests' ? (
           <Requests state={state} onAccept={onAccept} onRemoveRequest={onRemoveRequest} />
         ) : (
-          <FriendList friends={state.friends} onlyOnline={tab === 'online'} onCall={onCall} />
+          <FriendList friends={state.friends} onlyOnline={tab === 'online'} onCall={onCall} onMessage={onMessage} />
         )}
       </div>
     </section>
@@ -92,7 +94,22 @@ function AddFriend({ inputRef, onSendRequest }: Pick<Props, 'inputRef' | 'onSend
   )
 }
 
-function FriendList({ friends, onlyOnline, onCall }: { friends: FriendDto[]; onlyOnline: boolean; onCall(user: User): void }) {
+function FriendList({ friends, onlyOnline, onCall, onMessage }: Pick<Props, 'onCall' | 'onMessage'> & { friends: FriendDto[]; onlyOnline: boolean }) {
+  const [opening, setOpening] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function message(user: User) {
+    setOpening(user.id)
+    setError(null)
+    try {
+      await onMessage(user)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setOpening(null)
+    }
+  }
+
   const shown = sortFriends(onlyOnline ? friends.filter((f) => isOnline(f.presence)) : friends)
   const empty = onlyOnline ? 'Nenhum amigo online agora.' : 'Você ainda não tem amigos. Mande um pedido pelo @ ali em cima.'
 
@@ -100,6 +117,7 @@ function FriendList({ friends, onlyOnline, onCall }: { friends: FriendDto[]; onl
   return (
     <>
       <h3 className="friends-heading">{onlyOnline ? 'ONLINE' : 'TODOS OS AMIGOS'} — {shown.length}</h3>
+      {error && <p className="friends-error" role="alert">{error}</p>}
       <ul>
         {shown.map(({ user, presence }) => (
           <li key={user.id} className="friends-row">
@@ -112,7 +130,10 @@ function FriendList({ friends, onlyOnline, onCall }: { friends: FriendDto[]; onl
                 {presenceLabel[presence]}
               </span>
             </div>
-            <button className="friends-action" aria-label="Mandar mensagem" title="Em breve" disabled><ChatIcon size={18} /></button>
+            <button className="friends-msg" aria-label={`Mandar mensagem para ${user.displayName}`} disabled={opening !== null}
+              onClick={() => void message(user)}>
+              <ChatIcon size={16} /> Mensagem
+            </button>
             {/* Liga mesmo para quem aparece offline: pode estar invisível. Se o app dele estiver fechado, fica uma chamada perdida. */}
             <button className="friends-action" aria-label={`Ligar para ${user.displayName}`} title="Ligar" onClick={() => onCall(user)}>
               <PhoneIcon size={18} />
