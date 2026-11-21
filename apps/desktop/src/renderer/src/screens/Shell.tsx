@@ -8,9 +8,12 @@ import { MyStatusContext, useMyStatus } from '../hooks/useMyStatus'
 import { AccountContext } from '../hooks/useAccount'
 import type { User } from '../lib/api'
 import { showsCallScreen } from '../lib/calls'
+import { totalUnread } from '../lib/dms'
 import { initials } from '../lib/groups'
 import { CallView } from './CallView'
-import { ChatView } from './ChatView'
+import { GroupChatView } from './ChatView'
+import { DirectChatView } from './DirectChatView'
+import { DirectMessageList, NewMessageModal } from './DirectMessages'
 import { FriendsView } from './FriendsView'
 import { CreateGroupModal } from './GroupModals'
 import { GroupSidebar } from './GroupSidebar'
@@ -35,12 +38,15 @@ export function Shell({ user, token, notice, onSignOut, onAccountChange }: Props
   const [banner, setBanner] = useState(notice)
   const call = useCall(token)
   // Meus dados mudaram em outra janela: atualiza aqui também.
-  const data = useRealtime(token, call.events, (changed) => {
+  const data = useRealtime(token, user.id, call.events, (changed) => {
     if (changed.id === user.id) void onAccountChange(changed)
   })
   const myStatus = useMyStatus(token)
   const { friends, groups } = data
   const [openId, setOpenId] = useState<string | null>(null)
+  // Conversa direta aberta no Início (null = tela de Amigos).
+  const [dmId, setDmId] = useState<string | null>(null)
+  const [newMessage, setNewMessage] = useState(false)
   const [creating, setCreating] = useState(false)
   const [pickingScreen, setPickingScreen] = useState(false)
   const addFriendInput = useRef<HTMLInputElement>(null)
@@ -53,8 +59,19 @@ export function Shell({ user, token, notice, onSignOut, onAccountChange }: Props
   /** Troca de grupo (ou volta para Amigos); sai da tela da chamada sem desconectar. */
   const navigate = (id: string | null) => {
     setOpenId(id)
+    setDmId(null)
     call.setViewing(false)
   }
+
+  /** Abre uma conversa direta no Início. */
+  const openDm = (id: string) => {
+    setOpenId(null)
+    setDmId(id)
+    call.setViewing(false)
+  }
+
+  /** Abre (ou cria) a conversa com um amigo ("Mensagem" na lista ou o "+"). */
+  const messageFriend = async (userId: string) => openDm(await data.openConversation(userId))
 
   // Quem está na sala de voz do grupo aberto (depois os eventos mantêm atualizado).
   const { loadVoice } = data
@@ -68,6 +85,18 @@ export function Shell({ user, token, notice, onSignOut, onAccountChange }: Props
 
   const callLabel = current ? (current.target.kind === 'direct' ? current.target.friend.displayName : callGroup?.name ?? null) : null
   const showCall = showsCallScreen(call.viewing, current)
+
+  // DM na tela agora: zera as não lidas dela e marca como lido o que chegar enquanto estiver aberta.
+  const dm = group ? undefined : data.conversations.find((c) => c.id === dmId)
+  const dmFriend = dm ? friends.friends.find((f) => f.user.id === dm.user.id) : undefined
+  const viewedDm = dm && !showCall ? dm.id : null
+  const viewedLastAt = dm?.lastMessage?.createdAt ?? null
+  const { viewDm } = data
+  useEffect(() => {
+    viewDm(viewedDm, viewedLastAt)
+    return () => viewDm(null, null)
+  }, [viewedDm, viewedLastAt, viewDm])
+  const unreadDms = totalUnread(data.unread)
   // Se a chamada acabar com o seletor aberto, fecha o seletor.
   useEffect(() => {
     if (!current) setPickingScreen(false)
@@ -94,10 +123,13 @@ export function Shell({ user, token, notice, onSignOut, onAccountChange }: Props
       <nav className="rail" aria-label="Grupos">
         <div className="rail-item">
           {!group && <span className="rail-pill" aria-hidden="true" />}
-          <button className="rail-button rail-home" aria-label="Amigos" title="Amigos" aria-current={group ? undefined : 'page'}
+          <button className="rail-button rail-home" aria-label="Início" title="Início" aria-current={group ? undefined : 'page'}
             onClick={() => navigate(null)}>
             R
           </button>
+          {group && unreadDms > 0 && (
+            <span className="rail-badge" aria-label={`${unreadDms} mensagens diretas não lidas`}>{unreadDms > 99 ? '99+' : unreadDms}</span>
+          )}
         </div>
         <div className="rail-divider" aria-hidden="true" />
         {groups.map((g) => (
@@ -126,7 +158,7 @@ export function Shell({ user, token, notice, onSignOut, onAccountChange }: Props
             onAddMembers={(ids) => data.addMembers(group.id, ids)}
             onLeave={() => data.removeMember(group.id, user.id, true)} />
           {callScreen ?? (
-            <ChatView key={group.id} group={group} user={user} chat={data.messages[group.id]}
+            <GroupChatView key={group.id} group={group} user={user} chat={data.messages[group.id]}
               inCall={callGroup?.id === group.id} onJoinCall={() => void call.joinGroup(group.id)}
               onLoad={() => data.loadMessages(group.id)}
               onLoadOlder={(before) => data.loadOlder(group.id, before)}
@@ -142,17 +174,26 @@ export function Shell({ user, token, notice, onSignOut, onAccountChange }: Props
               <h1 className="sidebar-title">Início</h1>
             </header>
             <div className="sidebar-body">
-              <button className="sidebar-link" aria-current="page">
+              <button className="sidebar-link" aria-current={dm ? undefined : 'page'} onClick={() => navigate(null)}>
                 <UsersIcon /> Amigos
                 {pending > 0 && <span className="sidebar-badge" aria-label={`${pending} pedidos recebidos`}>{pending}</span>}
               </button>
-              <h2 className="sidebar-section">Conversas</h2>
-              <p className="sidebar-empty">Seus grupos aparecem no trilho à esquerda.</p>
+              <DirectMessageList meId={user.id} conversations={data.conversations} friends={friends.friends} unread={data.unread}
+                openId={dm?.id ?? null} onOpen={openDm} onNew={() => setNewMessage(true)} />
             </div>
             <UserPanel user={user} onSignOut={onSignOut} />
           </aside>
 
-          {callScreen ?? (
+          {callScreen ?? (dm ? (
+            <DirectChatView key={dm.id} conversation={dm} other={dmFriend?.user ?? dm.user} presence={dmFriend?.presence} user={user}
+              chat={data.dmMessages[dm.id]}
+              inCall={target?.kind === 'direct' && target.friend.id === dm.user.id}
+              onCall={() => (target?.kind === 'direct' && target.friend.id === dm.user.id ? call.setViewing(true) : void call.dial(dmFriend?.user ?? dm.user))}
+              onLoad={() => data.loadDmMessages(dm.id)}
+              onLoadOlder={(before) => data.loadOlderDm(dm.id, before)}
+              onSend={(text, images) => data.sendDm(dm.id, text, images)}
+              onDelete={(messageId) => data.deleteDm(dm.id, messageId)} />
+          ) : (
           <main className="content">
             <header className="pane-header content-header">
               <UsersIcon size={20} />
@@ -170,15 +211,19 @@ export function Shell({ user, token, notice, onSignOut, onAccountChange }: Props
             )}
 
             <FriendsView state={friends} inputRef={addFriendInput} onSendRequest={data.sendRequest} onAccept={data.accept}
-              onRemoveRequest={data.removeRequest} onCall={(friend) => void call.dial(friend)} />
+              onRemoveRequest={data.removeRequest} onCall={(friend) => void call.dial(friend)}
+              onMessage={(friend) => messageFriend(friend.id)} />
           </main>
-          )}
+          ))}
         </>
       )}
 
       {pickingScreen && (
         <ScreenPicker onCancel={() => setPickingScreen(false)}
           onConfirm={(id, audio) => { setPickingScreen(false); void call.startScreenShare(id, audio) }} />
+      )}
+      {newMessage && (
+        <NewMessageModal friends={friends.friends} onPick={messageFriend} onClose={() => setNewMessage(false)} />
       )}
       {creating && (
         <CreateGroupModal friends={friends.friends} onClose={() => setCreating(false)}

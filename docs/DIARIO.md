@@ -4,6 +4,9 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (tela de mensagens diretas, branch `feature/tela-dms`)
+- App: seção "Mensagens diretas" no Início ("+" abre a lista de amigos, prévia, não lidas locais em `localStorage`, mais recente em cima), botão "Mensagem" na lista de amigos, tela da conversa reaproveitando o `ChatView` (o reducer de mensagens virou genérico por `chatId`), ligar pelo cabeçalho, intro e aviso de só leitura para ex-amigos. Tempo real com `directMessageCreated`/`directMessageDeleted` e `canSend` por `friendAdded`/`friendRemoved`; badge de não lidas também no botão do Início quando se está num grupo. Lógica em `lib/dms.ts` com testes. Conferido no Electron com a API local (receber, abrir, enviar, só leitura, voltar a ser amigos, apagar, "+"). Depois juntei `hml` (cartão de perfil) e as DMs também tratam `userUpdated`. Sem merge em `hml`.
+
 ## 20/11/2026 — sessão interativa (cartão de perfil e userUpdated, branch `feature/cartao-perfil`)
 - Clicar na própria foto abre o cartão de perfil (banner, foto, nome e @ editáveis, bolinha de status com menu Online/Ausente/Offline, "Áudio e vídeo"); "Ausente" virou lua amarela em todo avatar. Novo evento `userUpdated` (amigos, colegas de grupo, quem tem DM e as outras janelas; estranho não recebe) atualiza amigos, pedidos, membros e mensagens; na troca de @ o token novo vai para a sessão salva. Testes: API 177, app 190; conferido no Electron por CDP. Sem merge.
 
