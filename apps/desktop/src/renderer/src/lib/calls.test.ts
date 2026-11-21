@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { User } from './api'
 import {
-  callReducer, callsApi, initialCallState, NOTICE_MS, RING_TIMEOUT_MS, startRingTimeout, type CallAction, type CallState,
+  callReducer, callsApi, initialCallState, NOTICE_MS, RING_TIMEOUT_MS, showsCallScreen, startRingTimeout, type CallAction, type CallState,
 } from './calls'
 
 const user = (id: string, displayName = id): User => ({ id, username: id, displayName, avatarUrl: null, bannerUrl: null })
@@ -161,5 +161,25 @@ describe('callsApi', () => {
   it('amigo offline (409) vira erro com a mensagem do servidor', async () => {
     fetchMock.mockResolvedValue(json(409, { title: 'Ana está offline' }))
     await expect(callsApi.dial('tok', 'ana')).rejects.toMatchObject({ message: 'Ana está offline', status: 409 })
+  })
+})
+
+describe('showsCallScreen (tela da chamada x chat)', () => {
+  const grupo = { kind: 'group' as const, groupId: 'g1' }
+  const direta = { kind: 'direct' as const, friend: user('ana') }
+
+  it('sem chamada, nunca mostra', () => {
+    expect(showsCallScreen(true, null)).toBe(false)
+  })
+
+  it('com a chamada ativa, voltar ao chat (viewing = false) esconde a tela sem exigir sair', () => {
+    expect(showsCallScreen(true, { target: grupo, status: 'active', room: 'r' })).toBe(true)
+    expect(showsCallScreen(false, { target: grupo, status: 'active', room: 'r' })).toBe(false)
+  })
+
+  it('grupo conectando já mostra a sala; 1:1 chamando não', () => {
+    expect(showsCallScreen(true, { target: grupo, status: 'connecting' })).toBe(true)
+    expect(showsCallScreen(true, { target: direta, status: 'connecting' })).toBe(false)
+    expect(showsCallScreen(true, { target: direta, status: 'ringing-out', room: 'r' })).toBe(false)
   })
 })

@@ -4,6 +4,9 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (bug: voltar ao chat do grupo durante a chamada)
+- Canal "conversa" da barra do grupo não tinha clique; agora mostra o chat sem derrubar a chamada (a sala vive no `useCall`) e a "Sala de voz" volta para a chamada. Destaque do canal segue o que está na tela; regra da tela da chamada extraída para `showsCallScreen` com testes. Branch `feature/corrige-voltar-chat`, sem merge.
+
 ## 20/11/2026 22:13 — execução automática (resenha-continuar)
 - Árvore limpa em `hml` e nenhuma dúvida respondida para aplicar. Uso: 2% (5 h) e 46% (semanal).
 - O que falta no roteiro depende de você: o passo 10 precisa subir o servidor no seu PC e testar com um amigo pelo Radmin (o firewall pede administrador). O passo 11 precisa de push e Releases, que esta automação não pode fazer.
