@@ -1,105 +1,84 @@
 # Hospedagem do servidor (passo 10)
 
-Um servidor só (VM grátis da Oracle) roda tudo com Docker: **Caddy** (HTTPS automático), **API** e **LiveKit** (mídia).
-Arquivos em [`deploy/`](../deploy). Custo: zero, desde que a conta fique no plano **Always Free**.
+O servidor roda **no PC de quem hospeda**, com Docker Desktop: **API** (contas, chat, SignalR) e **LiveKit** (mídia).
+Os amigos chegam até ele pela **Radmin VPN** (grátis), que cria uma rede virtual entre os PCs. Por isso funciona
+mesmo quando o provedor usa CGNAT e não dá para abrir portas no roteador. Arquivos em [`deploy/`](../deploy).
+Custo: zero.
 
 ```
-app ──HTTPS/WSS 443──▶ Caddy ─┬─ /rtc*  ─▶ LiveKit (sinalização)
-                              └─ resto  ─▶ API (+ SignalR)
-app ──UDP 7882 / TCP 7881──────────────▶ LiveKit (áudio, vídeo e tela)
+app do amigo ──Radmin VPN──▶ PC de quem hospeda
+                              ├─ TCP 8080       ─▶ API + SignalR
+                              ├─ TCP 7890       ─▶ LiveKit (sinalização)
+                              └─ UDP 7892 / TCP 7891 ─▶ LiveKit (áudio, vídeo e tela)
 ```
 
-> **Nunca** clique em "Upgrade to Pay As You Go" na Oracle. É isso que garante que nada é cobrado.
+- O tráfego vai em HTTP/WS simples porque a Radmin VPN já criptografa tudo entre os PCs. Não precisa de domínio
+  nem de certificado.
+- **Privacidade:** todos ficam na mesma rede do Radmin, então os amigos conseguem ver o IP uns dos outros
+  (o virtual do Radmin e, em conexão direta, o real). Isso foi aceito para um grupo fechado de amigos.
+- Se o seu provedor te dá IP público e você prefere não usar VPN, dá para liberar as mesmas portas no roteador e
+  usar o IP público (ou um nome grátis como o DuckDNS) no lugar do IP do Radmin.
 
-## 1. Conta na Oracle Cloud
+## 1. Radmin VPN (quem hospeda)
 
-1. Acesse oracle.com/cloud/free → **Start for free**.
-2. **Home Region: Brazil East (São Paulo)**. Não dá para trocar depois.
-3. O cartão serve só para verificar a identidade (pode aparecer uma cobrança temporária, que é estornada).
+1. Instale a Radmin VPN (radmin-vpn.com).
+2. **Rede → Criar rede**, com nome e senha. Passe nome e senha só para os amigos.
+3. O IP do seu PC na rede aparece no topo da janela (começa com `26.`). Ele é fixo para esta instalação.
 
-## 2. Criar a VM
+## 2. Subir o servidor (quem hospeda, uma vez)
 
-No console: **☰ → Compute → Instances → Create instance**.
-
-| Campo | Valor |
-|---|---|
-| Name | `resenha` |
-| Image | **Canonical Ubuntu 24.04** |
-| Shape | **Ampere → VM.Standard.A1.Flex**, 2 OCPU e 12 GB (o grátis vai até 4 OCPU/24 GB). Precisa aparecer "Always Free-eligible". |
-| Networking | criar VCN e sub-rede **pública**, com **IPv4 público** |
-| SSH keys | **Generate a key pair for me → Save private key** |
-| Boot volume | padrão (o grátis vai até 200 GB no total) |
-
-- Salve a chave privada como `C:\Users\<você>\.ssh\resenha-oracle` (sem extensão) e restrinja o acesso
-  (o SSH do Windows recusa chave que outros usuários conseguem ler):
-  ```powershell
-  icacls "$HOME\.ssh\resenha-oracle" /inheritance:r /grant:r "$($env:USERNAME):R"
-  ```
-- Se aparecer **"Out of capacity"**, tente outro *Availability Domain* ou tente mais tarde. O plano B é
-  `VM.Standard.E2.1.Micro` (1 GB de RAM, também grátis), mas nele a compilação da API fica lenta.
-- Anote o **IP público** da VM. Ele **não vai para o Git** nem para nenhum arquivo do projeto.
-
-## 3. Liberar as portas na Oracle
-
-**☰ → Networking → Virtual cloud networks →** a VCN → a sub-rede → **Default Security List → Add Ingress Rules**,
-com origem `0.0.0.0/0`:
-
-| Protocolo | Porta | Para quê |
-|---|---|---|
-| TCP | 80 | Let's Encrypt (validar o domínio) |
-| TCP | 443 | API, chat e sinalização (HTTPS) |
-| TCP | 7881 | mídia, quando a rede bloqueia UDP |
-| UDP | 7882 | mídia (o caminho normal) |
-
-O firewall de dentro do Ubuntu é liberado pelo `setup-vm.sh`.
-
-## 4. Domínio grátis (DuckDNS)
-
-O HTTPS precisa de um nome. Em duckdns.org, entre com GitHub ou Google, crie um subdomínio (ex.: `minharesenha`)
-e coloque o IP público da VM. O endereço fica `minharesenha.duckdns.org`.
-
-## 5. Subir o servidor
-
-No seu PC, com tudo commitado:
+Com o Docker Desktop instalado e aberto:
 
 ```powershell
-powershell -File deploy/publish.ps1 -Server ubuntu@minharesenha.duckdns.org
+powershell -File deploy/new-env.ps1    # cria deploy/.env com o IP do Radmin e segredos aleatórios
 ```
 
-Na primeira vez ele só copia os arquivos. Entre na VM e prepare tudo (uma vez só):
+Num PowerShell **como administrador**, libere as portas só na placa do Radmin (rede local e internet continuam fechadas):
 
 ```powershell
-ssh -i $HOME\.ssh\resenha-oracle ubuntu@minharesenha.duckdns.org
-bash ~/resenha/deploy/setup-vm.sh minharesenha.duckdns.org
-exit
+powershell -File deploy/firewall.ps1
 ```
 
-Entre de novo e suba os contêineres (a primeira compilação leva alguns minutos):
+Suba os contêineres (a primeira compilação leva alguns minutos):
 
-```bash
-cd ~/resenha/deploy && docker compose up -d --build
-curl https://minharesenha.duckdns.org/health    # deve responder "ok"
+```powershell
+cd deploy
+docker compose up -d --build
+curl.exe http://localhost:8080/health    # deve responder "ok"
 ```
 
-Depois disso, cada atualização é só rodar o `publish.ps1`.
+- **Ligar junto com o Windows:** no Docker Desktop, **Settings → General → Start Docker Desktop when you sign in**.
+  Os contêineres têm `restart: unless-stopped`, então sobem sozinhos com o Docker. O Radmin já inicia com o Windows.
+- **Atualizar** depois de mudar o código: `docker compose up -d --build` de novo, na pasta `deploy`. Os dados ficam.
+- Banco e imagens ficam no volume Docker `resenha-servidor_api_data`. Faça backup dele de vez em quando.
+- Logs: `docker compose logs -f api` (ou `livekit`).
+- As portas são diferentes das do desenvolvimento (`infra/` + `dotnet run`), então dá para programar com o servidor ligado.
 
-- Os segredos (chaves do LiveKit e do login) foram gerados na VM, em `~/resenha/deploy/.env`, e só existem lá.
-- Banco e imagens ficam no volume Docker `resenha_api_data`. Atualizar não apaga nada.
-- Logs: `docker compose logs -f api` (ou `livekit`, `caddy`).
+## 3. Instalador apontando para o servidor
 
-## 6. App apontando para o servidor
-
-Crie `apps/desktop/.env.production` (fora do Git), que vale só para o `npm run dist`:
+Crie `apps/desktop/.env.production` (fora do Git, vale só para o `npm run dist`), trocando pelo seu IP do Radmin:
 
 ```
-VITE_API_URL=https://minharesenha.duckdns.org
-VITE_LIVEKIT_URL=wss://minharesenha.duckdns.org
+VITE_API_URL=http://SEU-IP-DO-RADMIN:8080
+VITE_LIVEKIT_URL=ws://SEU-IP-DO-RADMIN:7890
 ```
 
-Gere o instalador com `npm run dist` em `apps/desktop`. O `npm run dev` continua usando o servidor local.
+Gere o instalador com `npm run dist` em `apps/desktop` e mande para os amigos. O `npm run dev` continua usando o
+servidor local.
 
-## Cuidados
+## 4. Amigos
 
-- A Oracle pode recuperar VMs grátis que ficam ociosas por 7 dias seguidos (uso muito baixo de CPU, rede e memória).
-  Se acontecer, os dados do volume se perdem. Faça backup do volume de vez em quando.
-- O IP de quem usa o app não chega aos amigos: toda a mídia passa pelo LiveKit, e a API não devolve IPs.
+1. Instalar a Radmin VPN e **Rede → Entrar em uma rede existente**, com o nome e a senha que você passou.
+2. Instalar o Resenha pelo instalador.
+3. Deixar o Radmin ligado sempre que for usar o Resenha.
+
+## Se algo não conectar
+
+- No PC do amigo, `ping SEU-IP-DO-RADMIN` precisa responder. Se não responder, o problema está no Radmin (os dois
+  estão na mesma rede e com o ícone verde?).
+- Ping responde mas o app não conecta: confira se as regras existem (`Get-NetFirewallRule -Group Resenha`) e se o
+  firewall do Windows não tem regra de **bloqueio** para o Docker (`com.docker.backend`). Bloqueio vence liberação.
+- Voz conecta mas cai ou não sai som: a porta UDP 7892 está bloqueada. O LiveKit tenta pela TCP 7891, com qualidade
+  um pouco pior.
+- No Docker Desktop a API não enxerga o IP de cada amigo, então o limite de tentativas de login (30 por minuto) vale
+  para o grupo todo. Num grupo pequeno isso não atrapalha.

@@ -37,14 +37,15 @@ https://claude.ai/artifact/Gam7gRxXZjqXLii41on8Wf
 ## Arquitetura
 
 ```
-                        ┌──────────────── VM gratuita (Oracle Cloud) ─────────────────┐
+                        ┌────────── PC de quem hospeda (Docker Desktop) ──────────────┐
 [App do amigo A] ──┐    │                                                             │
 [App do amigo B] ──┼────┼─► LiveKit (SFU)     ← áudio/vídeo/tela, ao vivo, nada gravado│
 [App do amigo C] ──┘    │      ▲ valida token                                          │
         │               │      │                                                      │
-        └── HTTPS + ────┼─► API .NET ──► SQLite (contas, amigos, grupos, mensagens)    │
+        └── HTTP + ─────┼─► API .NET ──► SQLite (contas, amigos, grupos, mensagens)    │
             SignalR     │       └──────► disco (fotos e imagens do chat)              │
                         └─────────────────────────────────────────────────────────────┘
+   (os apps chegam ao PC pela rede virtual da Radmin VPN, que já criptografa o tráfego)
 ```
 
 | Peça | Tecnologia | Por quê |
@@ -54,7 +55,7 @@ https://claude.ai/artifact/Gam7gRxXZjqXLii41on8Wf
 | API | **ASP.NET Core Minimal API** | Contas, amigos, grupos, chat, upload de imagens e emissão de tokens do LiveKit. Em C#. |
 | Tempo real | **SignalR** (vem no ASP.NET) | Mensagens novas, status online, pedidos de amizade e "fulano está te ligando" chegam na hora. |
 | Banco | **SQLite + EF Core** | Um arquivo só, sem servidor de banco para manter. Sobra para um grupo de amigos. |
-| Arquivos | Disco da VM (imagens convertidas para WebP) | Grátis e sem serviço extra. |
+| Arquivos | Disco do servidor (imagens convertidas para WebP) | Grátis e sem serviço extra. |
 
 ### O que fica armazenado
 
@@ -65,14 +66,11 @@ https://claude.ai/artifact/Gam7gRxXZjqXLii41on8Wf
 ### Onde roda
 
 1. **Desenvolvimento:** `docker compose up` local (LiveKit) + API rodando no PC. Sem conta nenhuma.
-2. **Uso real:** VM **Always Free da Oracle Cloud**, região São Paulo, tudo em Docker.
-   Limites do plano gratuito, conferidos na
-   [página oficial](https://docs.oracle.com/en-us/iaas/Content/FreeTier/resourceref.htm) em 20/11/2026:
-   - 2 núcleos ARM e 12 GB de RAM
-   - 200 GB de disco
-   - 10 TB/mês de tráfego de saída
-   - **Atenção:** a Oracle pode recolher VMs ociosas (CPU, rede e memória abaixo de 20% por 7 dias). Dimensionar a VM para o uso real no Passo 10.
-   - Por estar tudo em Docker, dá para trocar de servidor sem reescrever nada se a Oracle mudar o plano.
+2. **Uso real:** o PC de quem hospeda, tudo no Docker Desktop. **Os amigos conectam por VPN** (usamos a
+   Radmin VPN, que é grátis), o que funciona mesmo quando o provedor usa CGNAT. Quem clonar pode usar outra VPN,
+   ou liberar as portas no roteador se tiver IP público. Guia em [docs/HOSPEDAGEM.md](docs/HOSPEDAGEM.md).
+   - Na mesma rede da VPN, os amigos podem ver o IP uns dos outros. Isso é aceito porque o grupo é fechado.
+   - Por estar tudo em Docker, dá para levar o servidor para outra máquina sem reescrever nada.
 
 ## Estrutura planejada
 
@@ -97,7 +95,7 @@ resenha/
 - [x] **Passo 7 — Câmera** e grade de vídeos.
 - [x] **Passo 8 — Compartilhar tela** com seletor de janela/monitor e áudio do sistema.
 - [x] **Passo 9 — Qualidade:** presets de bitrate, simulcast, supressão de ruído, seleção de microfone/fone.
-- [ ] **Passo 10 — Hospedagem real** na Oracle e teste com um amigo pela internet. Arquivos prontos em `deploy/`; guia em [docs/HOSPEDAGEM.md](docs/HOSPEDAGEM.md).
+- [ ] **Passo 10 — Hospedagem real** no PC de quem hospeda, com os amigos pela Radmin VPN, e teste com um amigo. Arquivos prontos em `deploy/`; guia em [docs/HOSPEDAGEM.md](docs/HOSPEDAGEM.md).
 - [ ] **Passo 11 — Instalador** `.exe` com electron-builder, publicado em Releases do GitHub (build local, sem CI). O instalador já sai com `npm run dist`; falta publicar em Releases, o que depende do passo 10 (endereços reais do servidor) e de um push autorizado.
 
 ## Pré-requisitos (já instalados nesta máquina)

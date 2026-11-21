@@ -22,8 +22,9 @@ Status possíveis: `aberta` (ainda não bloqueia), `bloqueante` (trava um passo)
 
 ## Resolvidas
 
-### R11 — Hospedagem na Oracle e publicação do instalador (era D6, passos 10 e 11)
-- Respondido no chat em 20/11/2026: opção A. A automação prepara os arquivos de deploy (`deploy/`) e guia o usuário, numa sessão interativa, a criar a conta e a VM Always Free. Guia em `docs/HOSPEDAGEM.md`.
+### R11 — Hospedagem e publicação do instalador (era D6, passos 10 e 11)
+- Respondido no chat em 20/11/2026: opção A. A automação prepara os arquivos de deploy (`deploy/`) e guia o usuário numa sessão interativa. Guia em `docs/HOSPEDAGEM.md`.
+- Revisto no mesmo dia: a Oracle foi abandonada (o cadastro pedia dados de empresa). O servidor roda no PC do usuário (Docker Desktop) e os amigos conectam pela Radmin VPN, porque o provedor usa CGNAT. O usuário aceitou que, na mesma rede do Radmin, os amigos possam ver o IP uns dos outros.
 
 ### R6 — Pedidos enviados e desfazer amizade (era D1, passo 4)
 - Respondido no chat em 20/11/2026: opção A aprovada, como já está (seção "PEDIDOS ENVIADOS — N" com "Cancelar pedido"; desfazer amizade depois, num menu "⋯").

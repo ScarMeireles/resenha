@@ -22,7 +22,7 @@ Uma tarefa agendada do app Claude (`resenha-continuar`) roda **a cada hora** e s
 ## O que ela NÃO faz
 
 - `push`, PR, merge em `main`, `force`, apagar branches.
-- Criar conta, chave ou serviço (Oracle, GitHub etc.), nem nada que possa gerar custo.
+- Criar conta, chave ou serviço (Radmin, GitHub etc.), nem nada que possa gerar custo.
 - Decidir regras de negócio que você não pediu: vira dúvida em `docs/DUVIDAS.md`.
 
 ## Como pausar

@@ -1,58 +1,48 @@
-# Servidor real do Resenha (passo 10): Caddy (HTTPS) + API + LiveKit numa VM só.
-# Sobe com: docker compose up -d --build   (dentro desta pasta, na VM; o deploy/publish.ps1 faz isso por você)
-# Os segredos e o domínio vêm do deploy/.env, que só existe na VM (gerado pelo setup-vm.sh) e nunca vai para o Git.
-name: resenha
+# Servidor real do Resenha (passo 10): API + LiveKit no PC de quem hospeda, alcançados pelos amigos via Radmin VPN.
+# Sobe com: docker compose up -d --build   (dentro desta pasta)
+# Os segredos e o IP do Radmin vêm do deploy/.env (gerado pelo deploy/new-env.ps1), que nunca vai para o Git.
+# Portas diferentes das do ambiente de desenvolvimento (infra/ + dotnet run), para os dois poderem rodar juntos.
+name: resenha-servidor
 
 services:
-  caddy:
-    image: caddy:2.10
+  api:
+    build: ../server/api
     restart: unless-stopped
     environment:
-      RESENHA_DOMAIN: "${RESENHA_DOMAIN:?defina RESENHA_DOMAIN no deploy/.env}"
+      ASPNETCORE_ENVIRONMENT: Production
+      LiveKit__Url: "ws://${RESENHA_HOST_IP:?defina RESENHA_HOST_IP no deploy/.env}:7890"
+      LIVEKIT_API_KEY: "${LIVEKIT_API_KEY:?defina LIVEKIT_API_KEY no deploy/.env}"
+      LIVEKIT_API_SECRET: "${LIVEKIT_API_SECRET:?defina LIVEKIT_API_SECRET no deploy/.env}"
+      Jwt__SigningKey: "${JWT_SIGNING_KEY:?defina JWT_SIGNING_KEY no deploy/.env}"
+      # No Docker Desktop do Windows a API não enxerga o IP de cada amigo (todos chegam pelo mesmo IP interno),
+      # então o limite de login por IP vale para o grupo inteiro. Como só quem está na rede do Radmin alcança o
+      # servidor, o limite fica mais folgado aqui.
+      RateLimit__AuthPerMinute: "30"
     ports:
-      - "80:80"     # só para o Let's Encrypt validar o domínio e redirecionar para HTTPS
-      - "443:443"   # API, SignalR e sinalização do LiveKit, tudo em HTTPS/WSS
+      - "8080:8080"       # API e chat (HTTP + WebSocket do SignalR)
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data       # certificados (não precisa pedir de novo a cada atualização)
-      - caddy_config:/config
-    depends_on: [api, livekit]
-    logging: &logs            # logs com rotação e tamanho máximo (3 x 10 MB)
+      - api_data:/data    # banco SQLite e imagens
+    logging: &logs        # logs com rotação e tamanho máximo (3 x 10 MB)
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
 
-  api:
-    build: ../server/api
-    restart: unless-stopped
-    # Sem "ports": a API só é alcançada pelo Caddy, pela rede interna do Docker.
-    environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      ReverseProxy__Enabled: "true"
-      LiveKit__Url: "wss://${RESENHA_DOMAIN}"
-      LIVEKIT_API_KEY: "${LIVEKIT_API_KEY:?defina LIVEKIT_API_KEY no deploy/.env}"
-      LIVEKIT_API_SECRET: "${LIVEKIT_API_SECRET:?defina LIVEKIT_API_SECRET no deploy/.env}"
-      Jwt__SigningKey: "${JWT_SIGNING_KEY:?defina JWT_SIGNING_KEY no deploy/.env}"
-    volumes:
-      - api_data:/data        # banco SQLite e imagens
-    logging: *logs
-
   livekit:
     image: livekit/livekit-server:v1.13.11
     restart: unless-stopped
-    command: ["--config", "/etc/livekit.yaml"]
+    # O LiveKit anuncia o IP do Radmin para os apps mandarem a mídia para ele.
+    command: ["--config", "/etc/livekit.yaml", "--node-ip", "${RESENHA_HOST_IP}"]
     environment:
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
       LIVEKIT_WEBHOOK_API_KEY: "${LIVEKIT_API_KEY}"
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     ports:
-      - "7881:7881"       # mídia por TCP (plano B quando a rede bloqueia UDP)
-      - "7882:7882/udp"   # mídia por UDP (o caminho normal)
+      - "7890:7890"       # sinalização
+      - "7891:7891"       # mídia por TCP (plano B quando o UDP falha)
+      - "7892:7892/udp"   # mídia por UDP (o caminho normal)
     logging: *logs
 
 volumes:
-  caddy_data:
-  caddy_config:
   api_data:

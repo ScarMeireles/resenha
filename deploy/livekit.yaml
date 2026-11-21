@@ -1,10 +1,12 @@
-# LiveKit do servidor real. Sem segredos aqui: as chaves vêm de LIVEKIT_KEYS (deploy/.env, via docker-compose).
-port: 7880            # sinalização; só o Caddy fala com esta porta (ela não é publicada)
+# LiveKit do servidor real. Sem segredos aqui: as chaves vêm de LIVEKIT_KEYS e o IP do Radmin vem do --node-ip
+# (deploy/.env, via docker-compose). As portas de mídia são anunciadas para os apps, por isso são iguais dentro e
+# fora do contêiner.
+port: 7890            # sinalização
 
 rtc:
-  tcp_port: 7881      # plano B: mídia por TCP quando a rede bloqueia UDP
-  udp_port: 7882      # toda a mídia UDP numa porta só (fácil de liberar no firewall da Oracle)
-  use_external_ip: true   # descobre sozinho o IP público da VM (por STUN); assim o IP não fica escrito em lugar nenhum
+  tcp_port: 7891      # plano B: mídia por TCP quando o UDP falha
+  udp_port: 7892      # toda a mídia UDP numa porta só (uma regra só no firewall)
+  use_external_ip: false   # o IP anunciado é o do Radmin, não o da internet (que é CGNAT)
 
 room:
   empty_timeout: 300

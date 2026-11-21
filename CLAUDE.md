@@ -2,12 +2,12 @@
 
 App desktop de voz, câmera, compartilhamento de tela e chat entre amigos. Visão, arquitetura e roteiro estão no `README.md`.
 
-- **Custo zero:** só planos gratuitos (Oracle Always Free, Docker local). Nunca adicione serviço, plano ou recurso que possa gerar cobrança; se algo exigir isso, pare e avise.
+- **Custo zero:** só planos gratuitos (servidor no PC do usuário com Docker Desktop, amigos pela Radmin VPN). Nunca adicione serviço, plano ou recurso que possa gerar cobrança; se algo exigir isso, pare e avise.
 - Stack: Electron + React + TypeScript (`apps/desktop`), ASP.NET Core Minimal API + SignalR + EF Core/SQLite (`server/api`), LiveKit via Docker (`infra`).
 - Contas simples (@ único, nome, foto, senha curta, sem e-mail). Senha sempre com hash. Segurança proporcional a um app entre amigos.
 - **Segredos (API key/secret do LiveKit, chave de assinatura de JWT) nunca vão para o Git**: use `.env`/`appsettings.Development.json` ignorados e mantenha um `*.example` versionado.
-- **Repositório público, só código:** quem clonar hospeda o próprio servidor, banco e chaves. Nunca versionar banco, uploads (`.data/`), `.env`, chaves, IPs públicos (o da VM da Oracle vai no `.env`) ou dado pessoal do usuário. A verificação automática é `scripts/check-secrets.mjs` (hooks em `.githooks/`, ativados com `git config core.hooksPath .githooks`): se bloquear, corrija a causa e não use `--no-verify`.
-- **Privacidade dos usuários:** senha nunca aparece em log, resposta da API nem mensagem de erro. O IP de um usuário não é exposto para outro: a mídia passa pelo LiveKit (o app não conecta direto no IP do amigo) e a API não devolve IPs.
+- **Repositório público, só código:** quem clonar hospeda o próprio servidor, banco e chaves. Nunca versionar banco, uploads (`.data/`), `.env`, chaves, IPs públicos ou do Radmin (vão no `deploy/.env`) ou dado pessoal do usuário. A verificação automática é `scripts/check-secrets.mjs` (hooks em `.githooks/`, ativados com `git config core.hooksPath .githooks`): se bloquear, corrija a causa e não use `--no-verify`.
+- **Privacidade dos usuários:** senha nunca aparece em log, resposta da API nem mensagem de erro. A API não devolve IPs e a mídia passa pelo LiveKit (o app não conecta direto no IP do amigo). Exceção aceita pelo usuário: na rede da Radmin VPN os amigos podem ver o IP uns dos outros.
 - Visual segue os mockups aprovados (link no README). Paleta: grafite `#111318`/`#181B21`/`#1F232A`, laranja `#FF8A3D`, verde de fala `#3DDC97`; fontes Inter e Space Grotesk.
 - Sem CI do GitHub por enquanto: builds e testes rodam localmente.
 - Branches: `main` (produção) e `hml` (homologação). Todo trabalho sai de uma branch criada a partir de `hml` (ex.: `feature/passo-2-api-base`), volta para `hml` e só depois `hml` vai para `main`.

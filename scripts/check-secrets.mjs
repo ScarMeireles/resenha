@@ -32,7 +32,6 @@ const CONTENT_PATTERNS = [
   [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, "chave privada"],
   [/\b(?:ghp|gho|github_pat)_[A-Za-z0-9_]{20,}/, "token do GitHub"],
   [/\bAKIA[0-9A-Z]{16}\b/, "chave de acesso de nuvem"],
-  [/\bocid1\.[a-z]+\.oc1\.[^\s"']{10,}/i, "identificador (OCID) da Oracle Cloud"],
 ];
 
 // 3) Valores reais dos segredos locais (arquivos ignorados). Se algum aparecer no conteúdo, bloqueia.
