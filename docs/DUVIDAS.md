@@ -22,6 +22,11 @@ Status possíveis: `aberta` (ainda não bloqueia), `bloqueante` (trava um passo)
 
 ## Resolvidas
 
+### R12 — Melhorias de 20/11 (troca de @, DMs, volume)
+- Respondido no chat em 20/11/2026: trocar o próprio @ é livre, a qualquer hora, e o @ antigo fica livre na hora. Mensagens diretas só entre amigos; se deixarem de ser amigos, o histórico fica visível só para leitura. DMs com as mesmas regras do chat de grupo (até 4 imagens, apagar a própria vira "mensagem apagada"). Quem assiste regula o volume da transmissão e da voz de cada pessoa (ajuste salvo só no PC dele).
+- Modelos aprovados em 20/11/2026 (https://claude.ai/artifact/RcQLgx5B4XCcsNj6e8MrmB): clicar na própria foto abre o cartão de perfil (banner, foto, nome, @), status pela bolinha da foto e "Ausente" vira lua amarela. Qualidade escolhida na caixinha do compartilhamento vale para o atual e vira o padrão salvo. Volume da transmissão e da voz até 200%, lembrado por pessoa. Janela separada da transmissão é normal, com alfinete para fixar "sempre por cima". DMs na barra lateral do Início, com "+" que abre a lista de amigos.
+- DMs: ex-amigo ainda pode apagar a própria mensagem; conversa sem mensagem não aparece na lista; a conversa não mostra a presença de ex-amigos. Mudança de nome, foto, banner ou @ é avisada na hora para amigos e membros dos grupos (evento `userUpdated`).
+
 ### R11 — Hospedagem e publicação do instalador (era D6, passos 10 e 11)
 - Respondido no chat em 20/11/2026: opção A. A automação prepara os arquivos de deploy (`deploy/`) e guia o usuário numa sessão interativa. Guia em `docs/HOSPEDAGEM.md`.
 - Revisto no mesmo dia: a Oracle foi abandonada (o cadastro pedia dados de empresa). O servidor roda no PC do usuário (Docker Desktop) e os amigos conectam pela Radmin VPN, porque o provedor usa CGNAT. O usuário aceitou que, na mesma rede do Radmin, os amigos possam ver o IP uns dos outros.

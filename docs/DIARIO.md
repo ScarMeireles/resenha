@@ -4,8 +4,11 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 
 ---
 
+## 20/11/2026 — sessão interativa (instalador com escolha de pasta)
+- electron-builder.yml: NSIS virou assistente (oneClick false, allowToChangeInstallationDirectory true), mesmo appId, perMachine false. README explica como atualizar. Branch `feature/instalador-pasta`, com merge em `hml`.
+
 ## 20/11/2026 — sessão interativa (bug: voltar ao chat do grupo durante a chamada)
-- Canal "conversa" da barra do grupo não tinha clique; agora mostra o chat sem derrubar a chamada (a sala vive no `useCall`) e a "Sala de voz" volta para a chamada. Destaque do canal segue o que está na tela; regra da tela da chamada extraída para `showsCallScreen` com testes. Branch `feature/corrige-voltar-chat`, sem merge.
+- Canal "conversa" da barra do grupo não tinha clique; agora mostra o chat sem derrubar a chamada (a sala vive no `useCall`) e a "Sala de voz" volta para a chamada. Destaque do canal segue o que está na tela; regra da tela da chamada extraída para `showsCallScreen` com testes. Branch `feature/corrige-voltar-chat`, com merge em `hml`.
 
 ## 20/11/2026 22:13 — execução automática (resenha-continuar)
 - Árvore limpa em `hml` e nenhuma dúvida respondida para aplicar. Uso: 2% (5 h) e 46% (semanal).
@@ -152,6 +155,3 @@ Uma entrada por execução automática, a mais recente no topo: o que foi feito,
 - Próxima execução: revisar `git status`, commitar o passo 3, merge em `hml` e seguir para o passo 4. O README já marca o passo 3 como feito.
 - Sem dúvidas abertas. Fazer R4 (@ disponível em tempo real). Respostas R1–R4 em `docs/DUVIDAS.md`.
 - Observação: ao rodar o Electron a partir do Claude, remova `ELECTRON_RUN_AS_NODE` do ambiente e use `--no-sandbox` só para teste; feche a janela com `window.close()` (matar o processo à força perde a chave do `safeStorage`).
-
-## 20/11/2026 - instalador com escolha de pasta
-- electron-builder.yml: NSIS virou assistente (oneClick false, allowToChangeInstallationDirectory true), mesmo appId, perMachine false. README explica como atualizar. Branch feature/instalador-pasta.
